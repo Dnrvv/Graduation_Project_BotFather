@@ -5,9 +5,9 @@ from aiogram.types import CallbackQuery, Message
 from aiogram.types.base import TelegramObject
 
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from tgbot.infrastructure.database.db_functions import user_functions
-from tgbot.infrastructure.database.db_functions.user_functions import get_user
+import tgbot.config
+from tgbot.config import Config
+from tgbot.infrastructure.database.db_functions.user_functions import get_user, add_user
 
 
 class DatabaseMiddleware(LifetimeControllerMiddleware):
@@ -28,7 +28,15 @@ class DatabaseMiddleware(LifetimeControllerMiddleware):
             user = await get_user(session, telegram_id=obj.from_user.id)
 
             if not user:
-                await user_functions.add_user(session, telegram_id=obj.from_user.id)
+                config: Config = tgbot.config.load_config()
+                if obj.from_user.id in config.tg_bot.admin_ids:
+                    await add_user(session, telegram_id=obj.from_user.id, role="admin")
+                # elif obj.from_user.id in config.tg_bot.moderator_ids:
+                #     await add_user(session, telegram_id=obj.from_user.id, role="moderator")
+                # elif obj.from_user.id in config.tg_bot.spectator_ids:
+                #     await add_user(session, telegram_id=obj.from_user.id, role="spectator")
+                else:
+                    await add_user(session, telegram_id=obj.from_user.id)
 
             data['user'] = user
 
