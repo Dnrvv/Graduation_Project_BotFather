@@ -19,7 +19,7 @@ async def assign_admin_roles(session, bot: Bot, admins: list[int]):
 
             await add_user(
                 session,
-                admin_user.id, admin_user.full_name, Roles.ADMIN
+                admin_user.id, Roles.ADMIN
             )
             await session.commit()
             # await bot.send_message(chat_id=admin_id, text="You're now an admin!")
