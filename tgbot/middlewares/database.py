@@ -1,16 +1,13 @@
 from typing import Dict, Any
 
-from aiogram import Dispatcher
-from aiogram.dispatcher.handler import CancelHandler
 from aiogram.dispatcher.middlewares import LifetimeControllerMiddleware
-from aiogram.types import ReplyKeyboardRemove, CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message
 from aiogram.types.base import TelegramObject
-from aiogram.utils.markdown import quote_html
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from tgbot.infrastructure.database.db_functions import user_functions
 from tgbot.infrastructure.database.db_functions.user_functions import get_user
-from tgbot.misc.dependences import BLOCKED_IDS, BLOCKED_USER_FULLNAMES
-from tgbot.misc.states import Auth
 
 
 class DatabaseMiddleware(LifetimeControllerMiddleware):
@@ -27,25 +24,11 @@ class DatabaseMiddleware(LifetimeControllerMiddleware):
         if not getattr(obj, "from_user", None):
             return
 
-        if obj.from_user.id in BLOCKED_IDS or obj.from_user.full_name in BLOCKED_USER_FULLNAMES:
-            raise CancelHandler()
-
         if obj.from_user:
             user = await get_user(session, telegram_id=obj.from_user.id)
 
             if not user:
-                dispatcher = Dispatcher.get_current()
-                state = dispatcher.current_state()
-                state_name = await state.get_state()
-                bot = dispatcher.bot
-                if state_name == "Auth:PasswordConfirm":
-                    return
-                else:
-                    await bot.send_message(text=f"👾 Здравствуйте, {quote_html(obj.from_user.full_name)}! "
-                                                f"Введите пароль:",
-                                           reply_markup=ReplyKeyboardRemove(), chat_id=obj.from_user.id)
-                    await Auth.PasswordConfirm.set()
-                    raise CancelHandler()
+                await user_functions.add_user(session, telegram_id=obj.from_user.id)
 
             data['user'] = user
 
