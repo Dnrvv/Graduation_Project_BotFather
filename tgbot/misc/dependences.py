@@ -1,3 +1,2 @@
 
-
-ADMIN_USERNAME = "dnrvv"
+SUPPORT_USERNAME = "@dnrvv"

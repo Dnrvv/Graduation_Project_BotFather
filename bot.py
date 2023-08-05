@@ -7,12 +7,13 @@ from aiogram.contrib.fsm_storage.redis import RedisStorage2
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy.ext.asyncio import AsyncSession
 from tgbot.config import load_config, Config
-from tgbot.filters.admin import AdminFilter
+from tgbot.filters.role_filters import AdminFilter, ModeratorFilter, OperatorFilter, SpectatorFilter
 from tgbot.handlers.echo import register_echo
 from tgbot.handlers.errors_handler import register_errors_handler
 from tgbot.handlers.users.additional_commands import register_additional_commands
 from tgbot.handlers.users.bot_start import register_bot_start
 from tgbot.handlers.users.notify_users import register_notify_users
+from tgbot.infrastructure.database.db_functions.settings_functions import add_service_note
 
 from tgbot.infrastructure.database.db_functions.setup_functions import create_session_pool
 from tgbot.middlewares.database import DatabaseMiddleware
@@ -33,6 +34,9 @@ def register_all_middlewares(dp, session_pool, scheduler, environment: dict):
 
 def register_all_filters(dp):
     dp.filters_factory.bind(AdminFilter)
+    dp.filters_factory.bind(ModeratorFilter)
+    dp.filters_factory.bind(OperatorFilter)
+    dp.filters_factory.bind(SpectatorFilter)
 
 
 def register_all_handlers(dp):
@@ -49,6 +53,10 @@ def register_all_handlers(dp):
 async def on_startup(session_pool, bot: Bot, config: Config):
     logger.info("Bot started")
     session: AsyncSession = session_pool()
+
+    await add_service_note(session, name="active_users", value_2=0)
+    await add_service_note(session, name="terms_of_use", value_5="none")
+    await session.commit()
 
     await assign_admin_roles(session, bot, config.tg_bot.admin_ids)
     notify_text = "👨‍💻 Сообщение для администрации:\n<b>Бот запущен!</b> /start"

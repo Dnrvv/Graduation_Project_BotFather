@@ -8,3 +8,6 @@ class ServiceNote(DatabaseModel):
     value_2 = Column(Integer,  nullable=True)
     value_3 = Column(FLOAT, nullable=True)
     value_4 = Column(FLOAT, nullable=True)
+    value_5 = Column(VARCHAR(50), nullable=True)
+    value_6 = Column(VARCHAR(150), nullable=True)
+
