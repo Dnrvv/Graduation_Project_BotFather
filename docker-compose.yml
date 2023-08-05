@@ -47,11 +47,10 @@ services:
 
   redis:
     container_name: redis
-    image: redis:alpine
+    image: redis:6.2-alpine
     volumes:
-      - $PWD/redis-data:/var/lib/redis
-    ports:
-      - "6379:6379"
+      - redis_data:/data
+
     networks:
       - tg_bot
     restart: always
@@ -60,3 +59,6 @@ services:
 networks:
   tg_bot:
     driver: bridge
+
+volumes:
+  redis_data: {}

@@ -50,8 +50,6 @@ async def on_startup(session_pool, bot: Bot, config: Config):
     logger.info("Bot started")
     session: AsyncSession = session_pool()
 
-    # await reset_all_users_schedulers(session)
-
     await assign_admin_roles(session, bot, config.tg_bot.admin_ids)
     notify_text = "👨‍💻 Сообщение для администрации:\n<b>Бот запущен!</b> /start"
     await broadcast(bot, config.tg_bot.admin_ids, notify_text)
@@ -67,7 +65,7 @@ async def main():
     logger.info("Starting bot")
     config = load_config(".env")
 
-    storage = RedisStorage2() if config.tg_bot.use_redis else MemoryStorage()
+    storage = RedisStorage2(host='redis') if config.tg_bot.use_redis else MemoryStorage()
     bot = Bot(token=config.tg_bot.token, parse_mode='HTML')
     dp = Dispatcher(bot, storage=storage)
     scheduler = AsyncIOScheduler()
@@ -89,7 +87,7 @@ async def main():
     await on_startup(session_pool, bot, config)
 
     try:
-        # scheduler.start()
+        # scheduler.start()   !!!
         await dp.start_polling()
     finally:
         await dp.storage.close()
