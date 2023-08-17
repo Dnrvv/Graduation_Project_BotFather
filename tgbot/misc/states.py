@@ -6,5 +6,9 @@ class NotifyUsers(StatesGroup):
     NotifyApprove = State()
 
 
+class Order(StatesGroup):
+    OrderType = State()
+
+
 class AdminActions(StatesGroup):
     GetFile = State()

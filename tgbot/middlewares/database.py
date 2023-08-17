@@ -37,7 +37,7 @@ class DatabaseMiddleware(LifetimeControllerMiddleware):
                 #     await add_user(session, telegram_id=obj.from_user.id, role="spectator")
                 else:
                     await add_user(session, telegram_id=obj.from_user.id)
-
+                await session.commit()
             data['user'] = user
 
     async def post_process(self, obj: TelegramObject, data: Dict, *args: Any) -> None:
