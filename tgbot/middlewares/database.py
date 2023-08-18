@@ -30,13 +30,15 @@ class DatabaseMiddleware(LifetimeControllerMiddleware):
             if not user:
                 config: Config = tgbot.config.load_config()
                 if obj.from_user.id in config.tg_bot.admin_ids:
-                    await add_user(session, telegram_id=obj.from_user.id, role="admin")
+                    await add_user(session, telegram_id=obj.from_user.id, full_name=obj.from_user.full_name,
+                                   role="admin")
                 # elif obj.from_user.id in config.tg_bot.moderator_ids:
                 #     await add_user(session, telegram_id=obj.from_user.id, role="moderator")
                 # elif obj.from_user.id in config.tg_bot.spectator_ids:
                 #     await add_user(session, telegram_id=obj.from_user.id, role="spectator")
                 else:
-                    await add_user(session, telegram_id=obj.from_user.id)
+                    await add_user(session, telegram_id=obj.from_user.id, full_name=obj.from_user.full_name,
+                                   role="customer")
                 await session.commit()
             data['user'] = user
 

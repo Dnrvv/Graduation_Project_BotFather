@@ -7,11 +7,11 @@ main_menu_kb = ReplyKeyboardMarkup(
             KeyboardButton(text="Сделать заказ")
         ],
         [
-            KeyboardButton(text="Оставить отзыв"),
-            KeyboardButton(text="Настройки")
+            KeyboardButton(text="📨 Оставить отзыв"),
+            KeyboardButton(text="⚙️ Настройки")
         ],
         [
-            KeyboardButton(text="Мои заказы")
+            KeyboardButton(text="🛍 Мои заказы")
         ]
     ]
 )

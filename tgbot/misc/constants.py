@@ -5,6 +5,7 @@ class Roles(Helper):
     mode = HelperMode.lowerCamelCase
 
     USER = Item()
+    CUSTOMER = Item()
     ADMIN = Item()
     SPECTATOR = Item()
     BOT_OWNER = Item()

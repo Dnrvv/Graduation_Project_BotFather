@@ -58,7 +58,7 @@ async def on_startup(session_pool, bot: Bot, config: Config):
     await add_service_note(session, name="terms_of_use", value_5="none")
     await session.commit()
 
-    await assign_admin_roles(session, bot, config.tg_bot.admin_ids)
+    # await assign_admin_roles(session, bot, config.tg_bot.admin_ids)
     notify_text = "👨‍💻 Сообщение для администрации:\n<b>Бот запущен!</b> /start"
     await broadcast(bot, config.tg_bot.admin_ids, notify_text)
 
