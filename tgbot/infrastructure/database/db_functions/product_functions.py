@@ -7,7 +7,7 @@ from tgbot.services.service_functions import generate_random_id
 
 
 async def add_product(session: AsyncSession, photo_file_id: str, category_code: str, category_name: str,
-                      subcategory_code: str, subcategory_name: str, product_name: str, product_caption: str,
+                      product_name: str, product_caption: str,
                       product_price: float):
     insert_stmt = select(
         Product
@@ -19,8 +19,6 @@ async def add_product(session: AsyncSession, photo_file_id: str, category_code: 
             photo_file_id=photo_file_id,
             category_code=category_code,
             category_name=category_name,
-            subcategory_code=subcategory_code,
-            subcategory_name=subcategory_name,
             product_name=product_name,
             product_caption=product_caption,
             product_price=product_price
@@ -36,15 +34,8 @@ async def get_categories(session: AsyncSession):
     return result.unique().all()
 
 
-async def get_subcategories(session: AsyncSession):
-    stmt = select(Product)
-    result: AsyncResult = await session.scalars(stmt)
-    return result.unique().all()
-
-
-async def get_products(session: AsyncSession, category_code: str, subcategory_code: str):
-    stmt = select(Product).where(and_(Product.category_code == category_code,
-                                      Product.subcategory_code == subcategory_code))
+async def get_products(session: AsyncSession, category_code: str):
+    stmt = select(Product).where(Product.category_code == category_code)
     result: AsyncResult = await session.scalars(stmt)
     return result.unique().all()
 
@@ -52,4 +43,4 @@ async def get_products(session: AsyncSession, category_code: str, subcategory_co
 async def get_product(session: AsyncSession, product_id: str):
     stmt = select(Product).where(Product.product_id == product_id)
     result: AsyncResult = await session.scalars(stmt)
-    return result.unique().first()
+    return result.first()

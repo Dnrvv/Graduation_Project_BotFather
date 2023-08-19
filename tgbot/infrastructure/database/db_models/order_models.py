@@ -23,9 +23,6 @@ class Product(DatabaseModel):
     category_code = Column(VARCHAR(20))
     category_name = Column(VARCHAR(25))
 
-    subcategory_code = Column(VARCHAR(20))
-    subcategory_name = Column(VARCHAR(25))
-
     product_name = Column(VARCHAR(150), nullable=False)
     product_caption = Column(VARCHAR(250), nullable=False)
     product_price = Column(FLOAT, nullable=False, default=0)

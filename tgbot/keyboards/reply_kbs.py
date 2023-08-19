@@ -30,6 +30,16 @@ order_type_kb = ReplyKeyboardMarkup(
 )
 
 
+cancel_order_kb = ReplyKeyboardMarkup(
+    resize_keyboard=True,
+    keyboard=[
+        [
+            KeyboardButton(text="❌ Отменить заказ")
+        ],
+    ]
+)
+
+
 reply_approve_kb = ReplyKeyboardMarkup(
     resize_keyboard=True,
     keyboard=[
