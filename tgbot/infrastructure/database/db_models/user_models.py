@@ -7,14 +7,19 @@ class User(DatabaseModel, TimeStampMixin):
     full_name = Column(VARCHAR(100), nullable=False)
     phone = Column(VARCHAR(25), nullable=True)
 
-    orders_count = Column(Integer, nullable=False, autoincrement=False, default=0)
     role = Column(VARCHAR(10), nullable=False)
 
 
 class Address(DatabaseModel):
     address_id = Column(VARCHAR(50), nullable=False, autoincrement=False, primary_key=True)
-    customer_id = Column(BIGINT, nullable=False, autoincrement=False)
+    cust_telegram_id = Column(BIGINT, nullable=False, autoincrement=False)
     address = Column(VARCHAR(200), nullable=False)
+
+
+class Review(DatabaseModel):
+    review_id = Column(VARCHAR(20), primary_key=True)
+    cust_telegram_id = Column(BIGINT, nullable=False, autoincrement=False)
+    review_text = Column(VARCHAR(450), nullable=False)
 
 
 class BlockedUser(DatabaseModel, TimeStampMixin):

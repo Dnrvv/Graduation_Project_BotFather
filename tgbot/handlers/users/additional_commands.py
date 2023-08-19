@@ -27,6 +27,10 @@ async def save_file_id(message: types.Message, state: FSMContext, session: Async
     await state.finish()
 
 
+async def show_file_id(message: types.Message):
+    await message.reply(message.photo[-1].file_id)
+
+
 def register_additional_commands(dp: Dispatcher):
     dp.register_message_handler(get_help, commands=["help"], state="*")
 
@@ -34,3 +38,4 @@ def register_additional_commands(dp: Dispatcher):
     dp.register_message_handler(save_file_id, content_types=types.ContentType.DOCUMENT, is_admin=True,
                                 state=AdminActions.GetFile)
 
+    dp.register_message_handler(show_file_id, content_types=types.ContentType.PHOTO, is_admin=True)

@@ -12,13 +12,17 @@ from tgbot.handlers.echo import register_echo
 from tgbot.handlers.errors_handler import register_errors_handler
 from tgbot.handlers.users.additional_commands import register_additional_commands
 from tgbot.handlers.users.bot_start import register_bot_start
+from tgbot.handlers.users.cafe_menu_navigation import register_cafe_menu_navigation
+from tgbot.handlers.users.main_menu import register_main_menu
 from tgbot.handlers.users.notify_users import register_notify_users
+from tgbot.handlers.users.order import register_order
 from tgbot.infrastructure.database.db_functions.settings_functions import add_service_note
 
 from tgbot.infrastructure.database.db_functions.setup_functions import create_session_pool
 from tgbot.middlewares.database import DatabaseMiddleware
 from tgbot.middlewares.environment import EnvironmentMiddleware
 from tgbot.middlewares.throttling import ThrottlingMiddleware
+from tgbot.services.add_products import add_products
 from tgbot.services.broadcast_functions import broadcast
 from tgbot.services.init_admin_roles import assign_admin_roles
 from tgbot.services.set_bot_commands import set_bot_commands
@@ -47,6 +51,10 @@ def register_all_handlers(dp):
     register_additional_commands(dp)
     register_notify_users(dp)
 
+    register_main_menu(dp)
+    register_order(dp)
+    register_cafe_menu_navigation(dp)
+
     register_echo(dp)
 
 
@@ -57,6 +65,8 @@ async def on_startup(session_pool, bot: Bot, config: Config):
     await add_service_note(session, name="active_users", value_2=0)
     await add_service_note(session, name="terms_of_use", value_5="none")
     await session.commit()
+
+    await add_products(session)
 
     # await assign_admin_roles(session, bot, config.tg_bot.admin_ids)
     notify_text = "👨‍💻 Сообщение для администрации:\n<b>Бот запущен!</b> /start"
@@ -80,7 +90,6 @@ async def main():
     bot['config'] = config
 
     session_pool = await create_session_pool(config.db, drop_tables=True, echo=True)
-
     register_all_middlewares(
         dp,
         session_pool=session_pool,

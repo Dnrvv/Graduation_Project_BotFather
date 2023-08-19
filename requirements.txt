@@ -5,4 +5,5 @@ asyncpg~=0.25.0
 SQLAlchemy~=1.4
 sqlalchemy-stubs~=0.4
 apscheduler
+requests
 redis

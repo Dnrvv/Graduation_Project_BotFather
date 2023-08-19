@@ -7,7 +7,10 @@ class NotifyUsers(StatesGroup):
 
 
 class Order(StatesGroup):
-    OrderType = State()
+    GetOrderType = State()
+    GetLocation = State()
+    ApproveLocation = State()
+    Menu = State()
 
 
 class AdminActions(StatesGroup):
