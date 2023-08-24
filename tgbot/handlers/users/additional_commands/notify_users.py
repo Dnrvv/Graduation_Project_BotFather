@@ -67,10 +67,9 @@ async def notify_approve(call: types.CallbackQuery, callback_data: dict, state: 
     await call.answer()
     approve = callback_data.get("approve")
     if approve == "send":
-        data = await state.get_data()
+        async with state.proxy() as data:
+            msg_type = data.get("msg_type")
         users = await user_functions.get_some_users(session)
-        msg_type = data.get("msg_type")
-
         await call.bot.edit_message_text(chat_id=call.from_user.id, message_id=call.message.message_id,
                                          text="✅ Бот начал рассылку.")
         await call.message.answer("Главное меню:", reply_markup=main_menu_kb)

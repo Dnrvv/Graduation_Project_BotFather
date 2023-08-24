@@ -8,14 +8,14 @@ from tgbot.services.service_functions import generate_random_id
 
 async def add_product(session: AsyncSession, photo_file_id: str, category_code: str, category_name: str,
                       product_name: str, product_caption: str,
-                      product_price: float):
+                      product_price: int):
     insert_stmt = select(
         Product
     ).from_statement(
         insert(
             Product
         ).values(
-            product_id=generate_random_id(15),
+            product_id=generate_random_id(10),
             photo_file_id=photo_file_id,
             category_code=category_code,
             category_name=category_name,
@@ -29,9 +29,17 @@ async def add_product(session: AsyncSession, photo_file_id: str, category_code: 
 
 
 async def get_categories(session: AsyncSession):
-    stmt = select(Product)
-    result: AsyncResult = await session.scalars(stmt)
-    return result.unique().all()
+    stmt = (
+        select(Product.category_code, Product.category_name)
+        .distinct()
+        .group_by(Product.category_code, Product.category_name)
+    )
+
+    result: AsyncResult = await session.execute(stmt)
+    categories = result.all()
+
+    category_dict = {category.category_code: category.category_name for category in categories}
+    return category_dict
 
 
 async def get_products(session: AsyncSession, category_code: str):

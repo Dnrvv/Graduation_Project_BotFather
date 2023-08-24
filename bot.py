@@ -10,12 +10,15 @@ from tgbot.config import load_config, Config
 from tgbot.filters.role_filters import AdminFilter, ModeratorFilter, OperatorFilter, SpectatorFilter
 from tgbot.handlers.echo import register_echo
 from tgbot.handlers.errors_handler import register_errors_handler
-from tgbot.handlers.users.additional_commands import register_additional_commands
+from tgbot.handlers.users.additional_commands.adding_product import register_adding_product
+from tgbot.handlers.users.additional_commands.admin_commands import register_admin_commands
+from tgbot.handlers.users.additional_commands.user_commands import register_user_commands
 from tgbot.handlers.users.bot_start import register_bot_start
 from tgbot.handlers.users.cafe_menu_navigation import register_cafe_menu_navigation
 from tgbot.handlers.users.main_menu import register_main_menu
-from tgbot.handlers.users.notify_users import register_notify_users
-from tgbot.handlers.users.order import register_order
+from tgbot.handlers.users.additional_commands.notify_users import register_notify_users
+from tgbot.handlers.users.order_checkout import register_order_checkout
+from tgbot.handlers.users.order_prepare import register_order
 from tgbot.infrastructure.database.db_functions.settings_functions import add_service_note
 
 from tgbot.infrastructure.database.db_functions.setup_functions import create_session_pool
@@ -24,7 +27,6 @@ from tgbot.middlewares.environment import EnvironmentMiddleware
 from tgbot.middlewares.throttling import ThrottlingMiddleware
 from tgbot.services.add_products import add_products
 from tgbot.services.broadcast_functions import broadcast
-from tgbot.services.init_admin_roles import assign_admin_roles
 from tgbot.services.set_bot_commands import set_bot_commands
 
 logger = logging.getLogger(__name__)
@@ -45,15 +47,17 @@ def register_all_filters(dp):
 
 def register_all_handlers(dp):
     register_bot_start(dp)
-
     register_errors_handler(dp)
 
-    register_additional_commands(dp)
+    register_adding_product(dp)
+    register_admin_commands(dp)
     register_notify_users(dp)
+    register_user_commands(dp)
 
     register_main_menu(dp)
     register_order(dp)
     register_cafe_menu_navigation(dp)
+    register_order_checkout(dp)
 
     register_echo(dp)
 
@@ -67,6 +71,7 @@ async def on_startup(session_pool, bot: Bot, config: Config):
     await session.commit()
 
     await add_products(session)
+    await session.commit()
 
     # await assign_admin_roles(session, bot, config.tg_bot.admin_ids)
     notify_text = "👨‍💻 Сообщение для администрации:\n<b>Бот запущен!</b> /start"
@@ -89,7 +94,7 @@ async def main():
     scheduler = AsyncIOScheduler()
     bot['config'] = config
 
-    session_pool = await create_session_pool(config.db, drop_tables=True, echo=True)
+    session_pool = await create_session_pool(config.db, drop_tables=False, echo=True)
     register_all_middlewares(
         dp,
         session_pool=session_pool,

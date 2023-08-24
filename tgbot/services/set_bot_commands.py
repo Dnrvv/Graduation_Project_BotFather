@@ -6,18 +6,14 @@ from tgbot.config import Config
 
 async def set_bot_commands(dp, config: Config):
     default_commands = {
-        "menu": "Главное меню",
         "start": "Перезапустить бота",
-        "help": "Помощь",
-        "terms_of_use": "Пользовательское соглашение"
+        "order": "Сделать заказ",
     }
 
     admin_commands = {
-        "notify_users": "Уведомить пользователей",
-        "menu": "Главное меню",
         "start": "Перезапустить бота",
-        "help": "Помощь",
-        "terms_of_use": "Пользовательское соглашение",
+        "order": "Сделать заказ",
+        "notify_users": "Уведомить пользователей",
         "statistics": "Статистика бота"
     }
 

@@ -1,8 +1,9 @@
-from sqlalchemy import select, update, func, delete
+from sqlalchemy import select, update, func, delete, and_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncResult, AsyncSession
 
-from tgbot.infrastructure.database.db_models.user_models import User, BlockedUser, Address
+from tgbot.infrastructure.database.db_models.order_models import Order
+from tgbot.infrastructure.database.db_models.user_models import User, BlockedUser, Address, Feedback
 from tgbot.services.service_functions import generate_random_id
 
 
@@ -39,19 +40,46 @@ async def block_user(session: AsyncSession, blocked_user_id: int, blocked_by_mod
     return result.first()
 
 
-async def add_user_address(session: AsyncSession, cust_telegram_id: int, address: str):
+async def add_user_address(session: AsyncSession, cust_telegram_id: int, latitude: float, longitude: float,
+                           address: str):
     insert_stmt = select(
         Address
     ).from_statement(
         insert(
             Address
         ).values(
-            address_id=generate_random_id(25),
+            address_id=generate_random_id(20),
             cust_telegram_id=cust_telegram_id,
+            latitude=latitude,
+            longitude=longitude,
             address=address
-        )
-    ).returning(Address).on_conflict_do_nothing()
+        ).returning(Address).on_conflict_do_nothing()
+    )
+
     result = await session.scalars(insert_stmt)
+    return result.first()
+
+
+async def add_user_feedback(session: AsyncSession, cust_telegram_id: int, feedback_text: str):
+    insert_stmt = select(
+        Feedback
+    ).from_statement(
+        insert(
+            Feedback
+        ).values(
+            feedback_id=generate_random_id(15),
+            cust_telegram_id=cust_telegram_id,
+            feedback_text=feedback_text
+        ).returning(Feedback).on_conflict_do_nothing()
+    )
+    result = await session.scalars(insert_stmt)
+    return result.first()
+
+
+async def get_user_address_obj(session: AsyncSession, cust_telegram_id: int, address: str):
+    stmt = select(Address).where(and_(Address.cust_telegram_id == cust_telegram_id,
+                                      Address.address == address))
+    result: AsyncResult = await session.scalars(stmt)
     return result.first()
 
 
@@ -84,6 +112,15 @@ async def get_user(session: AsyncSession, telegram_id: int) -> User:
     return result.first()
 
 
+async def get_user_phone_number(session: AsyncSession, order_id: int):
+    stmt = select(Order).where(Order.order_id == order_id)
+    order = await session.scalar(stmt)
+    if order:
+        user_obj = await get_user(session, telegram_id=order.cust_telegram_id)
+        return user_obj.phone_number
+    return None
+
+
 async def get_some_users(session: AsyncSession, *clauses) -> list[User]:
     stmt = select(User).where(*clauses).order_by(User.created_at.desc())
     result: AsyncResult = await session.scalars(stmt)
@@ -100,3 +137,7 @@ async def update_user(session: AsyncSession, *clauses, **values):
     stmt = update(User).where(*clauses).values(**values)
     await session.execute(stmt)
 
+
+async def update_user_phone(session: AsyncSession, telegram_id: int, phone_number: str):
+    stmt = update(User).where(User.telegram_id == telegram_id).values(phone_number=phone_number)
+    await session.execute(stmt)

@@ -26,7 +26,6 @@ async def get_address(lat, lon):
         city = data.get('address', {}).get('city', 'Unknown City')
         street = data.get('address', {}).get('road', 'Unknown Street')
         house_number = data.get('address', {}).get('house_number', '')
-        full_address = ""
 
         if city != "Ташкент":
             return -1
@@ -36,10 +35,11 @@ async def get_address(lat, lon):
         else:
             street = street.replace(" улица", "")
 
+        full_address = f"{city}, ул. {street}"
+
         if house_number:
             full_address += f", {house_number}"
 
-        full_address = f"{city}, улица {street}"
         return full_address
     else:
         return None
