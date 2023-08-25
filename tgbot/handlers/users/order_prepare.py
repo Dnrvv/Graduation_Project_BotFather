@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from aiogram import types, Dispatcher
@@ -6,7 +7,7 @@ from aiogram.utils.exceptions import MessageToDeleteNotFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tgbot.config import load_config
-from tgbot.handlers.users.cafe_menu_navigation import list_categories
+from tgbot.handlers.users.order_menu import list_categories
 from tgbot.infrastructure.database.db_functions import user_functions
 from tgbot.keyboards.reply_kbs import delivery_location_kb, main_menu_kb, order_type_kb, saved_locations_kb, \
     reply_approve_kb, reply_cancel_kb
@@ -55,9 +56,21 @@ async def choose_saved_delivery_location(message: types.Message, session: AsyncS
 async def get_delivery_location(message: types.Message, state: FSMContext, session: AsyncSession):
     if message.location:
         location = message.location
-        address = await get_address(location.latitude, location.longitude)
+        please_wait_msg = None
+
+        address_task = asyncio.create_task(get_address(location.latitude, location.longitude))
+        done, _ = await asyncio.wait([address_task], timeout=5)
+        # done - список завершенных задач
+        if address_task in done:
+            address = address_task.result()
+        else:
+            please_wait_msg = await message.answer("⏳ Пожалуйста, подождите...")
+            await address_task
+            address = address_task.result()
 
         if not address:
+            if please_wait_msg:
+                await message.bot.delete_message(chat_id=message.from_user.id, message_id=please_wait_msg.message_id)
             admins = load_config().tg_bot.admin_ids
             await broadcast(message.bot, users=admins, text=f"🛠 Ошибка при кодировке адреса.")
 
@@ -68,8 +81,13 @@ async def get_delivery_location(message: types.Message, state: FSMContext, sessi
             return
 
         elif address == -1:
+            if please_wait_msg:
+                await message.bot.delete_message(chat_id=message.from_user.id, message_id=please_wait_msg.message_id)
             await message.answer("😔 По указанному адресу служба доставки не работает. Попробуйте ещё раз:")
             return
+
+        if please_wait_msg:
+            await message.bot.delete_message(chat_id=message.from_user.id, message_id=please_wait_msg.message_id)
 
         await message.answer(f"📍 Адрес, по которому будет доставлен заказ: <b>{address}</b>.\n"
                              f"Вы <b>подтверждаете</b> этот адрес?", reply_markup=reply_approve_kb)

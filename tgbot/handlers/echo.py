@@ -22,7 +22,7 @@ async def bot_echo_all(message: types.Message, state: FSMContext):
         elif "ApproveLocation" in state_name:
             await message.answer("Используйте кнопки ниже:", reply_markup=reply_approve_kb)
         elif "Menu" in state_name:
-            await message.answer("Используйте меню для заказа.")
+            await message.answer("Используйте меню для заказа.", reply_markup=reply_cancel_kb)
         elif "GetContact" in state_name:
             await message.answer("Используйте кнопки ниже, либо отправьте номер телефона в формате "
                                  "<b>+998 ** *** ** **</b>.", reply_markup=get_contact_kb)

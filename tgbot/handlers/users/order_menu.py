@@ -53,6 +53,7 @@ async def show_item(call: types.CallbackQuery, category, product_id, state: FSMC
     product = await product_functions.get_product(session, product_id=product_id)
     text = (f"<b>{product.product_name}</b>\n\n"
             f"{product.product_caption}\n\n"
+            f"Цена: {format_number_with_spaces(product.product_price)} сум\n\n"
             f"Укажите количество:")
     photo = f"{product.photo_file_id}"
     await call.bot.delete_message(chat_id=user_id, message_id=call.message.message_id)
@@ -71,6 +72,7 @@ async def change_product_quantity(call: types.CallbackQuery, callback_data: dict
     if quantity_counter < 1:
         await call.answer("Минимальное количество - 1 шт.", show_alert=False)
         return
+
     elif quantity_counter > 100:
         await call.answer("Максимальное количество - 100 шт.", show_alert=False)
         return

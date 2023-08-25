@@ -14,7 +14,7 @@ from tgbot.handlers.users.additional_commands.adding_product import register_add
 from tgbot.handlers.users.additional_commands.admin_commands import register_admin_commands
 from tgbot.handlers.users.additional_commands.user_commands import register_user_commands
 from tgbot.handlers.users.bot_start import register_bot_start
-from tgbot.handlers.users.cafe_menu_navigation import register_cafe_menu_navigation
+from tgbot.handlers.users.order_menu import register_cafe_menu_navigation
 from tgbot.handlers.users.main_menu import register_main_menu
 from tgbot.handlers.users.additional_commands.notify_users import register_notify_users
 from tgbot.handlers.users.order_checkout import register_order_checkout
@@ -94,7 +94,7 @@ async def main():
     scheduler = AsyncIOScheduler()
     bot['config'] = config
 
-    session_pool = await create_session_pool(config.db, drop_tables=False, echo=True)
+    session_pool = await create_session_pool(config.db, drop_tables=True, echo=True)
     register_all_middlewares(
         dp,
         session_pool=session_pool,
