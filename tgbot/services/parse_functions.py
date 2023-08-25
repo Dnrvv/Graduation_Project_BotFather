@@ -10,7 +10,7 @@ async def parse_user_order_text(order_obj, session: AsyncSession):
 
     address_obj = await order_functions.get_delivery_address(session, order_id=order_obj.order_id)
     text = (f"Номер заказа: <b>{order_obj.order_id}</b>\n"
-            f"Дата заказа: {order_obj.created_at.date().strftime('%d-%m-%Y')}\n"
+            f"Дата заказа: {order_obj.created_at.strftime('%d-%m-%Y %H:%M')}\n"
             f"Адрес: {address_obj.address}\n\n")
     total_products_cost = 0
     print(order_products)

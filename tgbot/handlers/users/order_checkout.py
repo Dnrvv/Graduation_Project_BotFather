@@ -70,7 +70,7 @@ async def get_contact(message: types.Message, state: FSMContext, session: AsyncS
         await Order.Menu.set()
         return
 
-    pattern = r'^\+998 ?\d{2} ?\d{3} ?\d{2} ?\d{2}$'
+    pattern = r'^\+? ?998 ?\d{2} ?\d{3} ?\d{2} ?\d{2}$'
     match = re.match(pattern, message.text)
     if match:
         phone_number = message.text.replace(" ", "")
