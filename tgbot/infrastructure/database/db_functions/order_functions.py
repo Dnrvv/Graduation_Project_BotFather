@@ -25,7 +25,7 @@ async def add_order(session: AsyncSession, cust_telegram_id: int, order_type: st
     return result.first()
 
 
-async def add_order_product(session: AsyncSession, order_id: str, product_id: str, product_quantity: int):
+async def add_order_product(session: AsyncSession, order_id: str, product_id: int, product_quantity: int):
     insert_stmt = select(
         OrderProduct
     ).from_statement(

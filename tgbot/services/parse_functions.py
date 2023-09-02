@@ -30,3 +30,26 @@ async def parse_user_order_text(order_obj, session: AsyncSession):
              f"<b>Доставка:</b> {format_number_with_spaces(delivery_obj.delivery_cost)} сум\n"
              f"<b>Итого: {format_number_with_spaces(total_products_cost + delivery_obj.delivery_cost)} сум</b>")
     return text
+
+
+async def parse_edited_product(product_id: int, session: AsyncSession, product_name: str = None,
+                               product_caption: str = None, product_price: int = None):
+    old_product_obj = await product_functions.get_product(session, product_id=product_id)
+    text = ""
+    if product_name:
+        text += (f"Название: <b>{product_name}</b>\n\n"
+                 f"Описание: {old_product_obj.product_caption}\n\n"
+                 f"Цена: {format_number_with_spaces(old_product_obj.product_price)} сум\n\n")
+    elif product_caption:
+        text += (f"Название: <b>{old_product_obj.product_name}</b>\n\n"
+                 f"Описание: {product_caption}\n\n"
+                 f"Цена: {format_number_with_spaces(old_product_obj.product_price)} сум\n\n")
+    elif product_price:
+        text += (f"Название: <b>{old_product_obj.product_name}</b>\n\n"
+                 f"Описание: {old_product_obj.product_caption}\n\n"
+                 f"Цена: {format_number_with_spaces(product_price)} сум\n\n")
+    else:
+        text += (f"Название: <b>{old_product_obj.product_name}</b>\n\n"
+                 f"Описание: {old_product_obj.product_caption}\n\n"
+                 f"Цена: {format_number_with_spaces(old_product_obj.product_price)} сум\n\n")
+    return text

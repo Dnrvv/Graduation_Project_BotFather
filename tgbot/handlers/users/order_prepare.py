@@ -175,7 +175,7 @@ async def cancel_order(message: types.Message, state: FSMContext):
     await message.answer("😔 Заказ отменён.", reply_markup=main_menu_kb)
 
 
-def register_order(dp: Dispatcher):
+def register_order_prepare(dp: Dispatcher):
     dp.register_message_handler(cancel_order, text="❌ Отмена",
                                 state=[Order.GetOrderType, Order.GetLocation, Order.ApproveLocation, Order.Menu])
     dp.register_message_handler(get_order_type, content_types=types.ContentType.TEXT, state=Order.GetOrderType)

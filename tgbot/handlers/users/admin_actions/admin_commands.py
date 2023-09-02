@@ -38,5 +38,4 @@ def register_admin_commands(dp: Dispatcher):
     dp.register_message_handler(get_tou_file_id, commands=["update_tou"], is_admin=True, state="*")
     dp.register_message_handler(save_file_id, content_types=types.ContentType.DOCUMENT, is_admin=True,
                                 state=AdminActions.GetTOUFile)
-    dp.register_message_handler(show_file_id, content_types=types.ContentType.PHOTO, is_admin=True,
-                                state="*")
+    dp.register_message_handler(show_file_id, content_types=types.ContentType.PHOTO, is_admin=True, state="*")

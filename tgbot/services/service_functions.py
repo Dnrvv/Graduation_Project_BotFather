@@ -75,6 +75,9 @@ def number_to_emoji(number):
         return emoji_str
 
 
-def format_number_with_spaces(number):
-    formatted_number = "{:,}".format(number).replace(',', ' ')
+def format_number_with_spaces(number: int):
+    if number < 1000:
+        return str(number)
+
+    formatted_number = "{:,}".format(number).replace(",", " ")
     return formatted_number

@@ -7,7 +7,7 @@ from aiogram.utils.exceptions import MessageToDeleteNotFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tgbot.infrastructure.database.db_functions import product_functions, order_functions, user_functions
-from tgbot.keyboards.generate_keyboards import categories_keyboard, cart_actions_cd
+from tgbot.keyboards.menu_inline_kbs import categories_keyboard, cart_actions_cd
 from tgbot.keyboards.reply_kbs import get_contact_kb, payment_type_kb, order_approve_kb, main_menu_kb, reply_cancel_kb
 from tgbot.middlewares.throttling import rate_limit
 from tgbot.misc.states import Order
@@ -101,7 +101,7 @@ async def get_payment_type(message: types.Message, state: FSMContext, session: A
                            f"Номер телефона: {phone_number}\n\n")
 
     for product_id, quantity in selected_products.items():
-        product_obj = await product_functions.get_product(session, product_id=product_id)
+        product_obj = await product_functions.get_product(session, product_id=int(product_id))
         cart_product_cost = quantity * product_obj.product_price
 
         order_checkout_text += f"<b>{product_obj.product_name}</b>\n"
@@ -116,7 +116,7 @@ async def get_payment_type(message: types.Message, state: FSMContext, session: A
                             f"<b>Подтвердить заказ?</b>")
 
     await message.answer(text=order_checkout_text, reply_markup=order_approve_kb)
-    await Order.ApproveOrder.set()
+    await Order.OrderApprove.set()
 
 
 @rate_limit(1)
@@ -158,7 +158,7 @@ async def approve_order(message: types.Message, state: FSMContext, session: Asyn
                            f"Адрес: {address}\n\n")
 
         for product_id, quantity in selected_products.items():
-            product_obj = await product_functions.get_product(session, product_id=product_id)
+            product_obj = await product_functions.get_product(session, product_id=int(product_id))
             order_info_text += f"<b>{product_obj.product_name}</b>\n"
             cart_product_cost = quantity * product_obj.product_price
             order_info_text += (f"<b> {number_to_emoji(quantity)}</b> ✖️ "
@@ -195,4 +195,4 @@ def register_order_checkout(dp: Dispatcher):
     dp.register_message_handler(get_contact, content_types=[types.ContentType.TEXT, types.ContentType.CONTACT],
                                 state=Order.GetContact)
     dp.register_message_handler(get_payment_type, content_types=types.ContentType.TEXT, state=Order.GetPaymentType)
-    dp.register_message_handler(approve_order, content_types=types.ContentType.TEXT, state=Order.ApproveOrder)
+    dp.register_message_handler(approve_order, content_types=types.ContentType.TEXT, state=Order.OrderApprove)

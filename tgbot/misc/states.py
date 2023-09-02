@@ -17,21 +17,28 @@ class Order(StatesGroup):
     Menu = State()
     GetContact = State()
     GetPaymentType = State()
-    ApproveOrder = State()
+    OrderApprove = State()
 
 
 class AdminActions(StatesGroup):
     GetTOUFile = State()
 
 
-class AddProduct(StatesGroup):
-    GetProductPhoto = State()
+class ModerationActions(StatesGroup):
+    GetAction = State()
+    ProductsMenu = State()
 
+    GetProductPhoto = State()
     GetProductCategoryCode = State()
     GetProductCategoryName = State()
-
     GetProductName = State()
     GetProductCaption = State()
     GetProductPrice = State()
+    NewProductApprove = State()
 
-    ApproveNewProduct = State()
+    EditProduct = State()
+    EditProductApprove = State()
+
+    GetProductId = State()
+    HideProductApprove = State()
+    RevealProductApprove = State()

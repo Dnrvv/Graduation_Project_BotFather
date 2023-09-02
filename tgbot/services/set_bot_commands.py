@@ -14,7 +14,8 @@ async def set_bot_commands(dp, config: Config):
         "start": "Перезапустить бота",
         "order": "Сделать заказ",
         "notify_users": "Уведомить пользователей",
-        "statistics": "Статистика бота"
+        "statistics": "Статистика бота",
+        "moderation_menu": "Меню модерации"
     }
 
     # moderator_commands = {

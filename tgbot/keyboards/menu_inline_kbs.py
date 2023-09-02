@@ -57,6 +57,8 @@ async def items_keyboard(category, session: AsyncSession):
     keyboard = InlineKeyboardMarkup(row_width=2)
     products = await product_functions.get_products(session, category)
     for product in products:
+        if product.is_hidden:
+            continue
         button_text = f"{product.product_name}"
         callback_data = make_callback_data(level=current_level + 1,
                                            category=category,

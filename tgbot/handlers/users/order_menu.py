@@ -5,7 +5,7 @@ from aiogram.dispatcher import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tgbot.infrastructure.database.db_functions import product_functions
-from tgbot.keyboards.generate_keyboards import categories_keyboard, items_keyboard, \
+from tgbot.keyboards.menu_inline_kbs import categories_keyboard, items_keyboard, \
     item_keyboard, cafe_menu_cd, order_products_cd, cart_keyboard
 from tgbot.keyboards.reply_kbs import main_menu_kb
 from tgbot.misc.states import Order
@@ -48,14 +48,14 @@ async def list_items(call: types.CallbackQuery, category, state: FSMContext, ses
 
 async def show_item(call: types.CallbackQuery, category, product_id, state: FSMContext, session: AsyncSession):
     await call.answer()
-    keyboard = await item_keyboard(category=category, product_id=product_id, session=session)
+    keyboard = await item_keyboard(category=category, product_id=int(product_id), session=session)
     user_id = call.from_user.id
-    product = await product_functions.get_product(session, product_id=product_id)
-    text = (f"<b>{product.product_name}</b>\n\n"
-            f"{product.product_caption}\n\n"
-            f"Цена: {format_number_with_spaces(product.product_price)} сум\n\n"
+    product_obj = await product_functions.get_product(session, product_id=int(product_id))
+    text = (f"<b>{product_obj.product_name}</b>\n\n"
+            f"{product_obj.product_caption}\n\n"
+            f"Цена: {format_number_with_spaces(product_obj.product_price)} сум\n\n"
             f"Укажите количество:")
-    photo = f"{product.photo_file_id}"
+    photo = product_obj.photo_file_id
     await call.bot.delete_message(chat_id=user_id, message_id=call.message.message_id)
     ph_msg = await call.bot.send_photo(photo=photo, chat_id=user_id, caption=text, reply_markup=keyboard)
 
@@ -65,7 +65,7 @@ async def show_item(call: types.CallbackQuery, category, product_id, state: FSMC
 
 async def change_product_quantity(call: types.CallbackQuery, callback_data: dict, state: FSMContext,
                                   session: AsyncSession):
-    product_id = callback_data.get("product_id")
+    product_id = int(callback_data.get("product_id"))
     category = callback_data.get("category")
     quantity_counter = int(callback_data.get("quantity_counter"))
 
@@ -118,7 +118,7 @@ async def show_cart(call: types.CallbackQuery, category, product_id, state: FSMC
     total_products_cost = 0
 
     for product_id, quantity in selected_products.items():
-        product_obj = await product_functions.get_product(session, product_id=product_id)
+        product_obj = await product_functions.get_product(session, product_id=int(product_id))
 
         cart_product_cost = quantity * product_obj.product_price
         total_products_cost += cart_product_cost
@@ -138,7 +138,7 @@ async def show_cart(call: types.CallbackQuery, category, product_id, state: FSMC
 async def global_navigate(call: types.CallbackQuery, callback_data: dict, state: FSMContext, session: AsyncSession):
     current_level = callback_data.get("level")
     category = callback_data.get("category")
-    product_id = callback_data.get("product_id")
+    product_id = int(callback_data.get("product_id"))
 
     levels = {
         "-1": back_to_main_menu,
@@ -155,6 +155,6 @@ async def global_navigate(call: types.CallbackQuery, callback_data: dict, state:
                                  session=session)
 
 
-def register_cafe_menu_navigation(dp: Dispatcher):
+def register_order_menu(dp: Dispatcher):
     dp.register_callback_query_handler(global_navigate, cafe_menu_cd.filter(), state=Order.Menu)
     dp.register_callback_query_handler(change_product_quantity, order_products_cd.filter(), state=Order.Menu)
