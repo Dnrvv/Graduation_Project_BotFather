@@ -23,8 +23,8 @@ async def add_user(session: AsyncSession, telegram_id: int, full_name: str, role
     return result.first()
 
 
-async def block_user(session: AsyncSession, blocked_user_id: int, blocked_by_moderator_id: int,
-                     block_reason: str = None):
+async def add_blocked_user(session: AsyncSession, blocked_user_id: int, blocked_by_moderator_id: int,
+                           block_reason: str = None):
     insert_stmt = select(
         BlockedUser
     ).from_statement(
@@ -135,9 +135,4 @@ async def get_users_count(session: AsyncSession, *clauses) -> int:
 
 async def update_user(session: AsyncSession, *clauses, **values):
     stmt = update(User).where(*clauses).values(**values)
-    await session.execute(stmt)
-
-
-async def update_user_phone(session: AsyncSession, telegram_id: int, phone_number: str):
-    stmt = update(User).where(User.telegram_id == telegram_id).values(phone_number=phone_number)
     await session.execute(stmt)

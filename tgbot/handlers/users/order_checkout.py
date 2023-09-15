@@ -7,6 +7,7 @@ from aiogram.utils.exceptions import MessageToDeleteNotFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tgbot.infrastructure.database.db_functions import product_functions, order_functions, user_functions
+from tgbot.infrastructure.database.db_models.user_models import User
 from tgbot.keyboards.menu_inline_kbs import categories_keyboard, cart_actions_cd
 from tgbot.keyboards.reply_kbs import get_contact_kb, payment_type_kb, order_approve_kb, main_menu_kb, reply_cancel_kb
 from tgbot.middlewares.throttling import rate_limit
@@ -150,7 +151,7 @@ async def approve_order(message: types.Message, state: FSMContext, session: Asyn
         await order_functions.add_delivery(session, delivery_address_id=address_id, order_id=order_obj.order_id,
                                            delivery_cost=delivery_cost)
 
-        await user_functions.update_user_phone(session, telegram_id=message.from_user.id, phone_number=phone_number)
+        await user_functions.update_user(session, User.telegram_id == message.from_user.id, phone_number=phone_number)
 
         # ---------------------------------------------------------
 
