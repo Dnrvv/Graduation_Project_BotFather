@@ -18,26 +18,38 @@ from tgbot.services.service_functions import number_to_emoji, format_number_with
 @rate_limit(1)
 async def cart_actions(call: types.CallbackQuery, callback_data: dict, state: FSMContext,
                        session: AsyncSession):
-    await call.answer()
+
     action = callback_data.get("action")
     if action == "order_checkout":
+        async with state.proxy() as data:
+            total_products_cost = int(data.get("total_products_cost"))
+            delivery_cost = int(data.get("delivery_cost"))
+
+        user = await user_functions.get_user(session, telegram_id=call.from_user.id)
+        if user.balance < total_products_cost + delivery_cost:
+            await call.answer("😭 На Вашем балансе недостаточно средств.", show_alert=True)
+            return
+
+        await call.answer()
         await call.message.edit_reply_markup()
+
         text = ("Отправьте или введите ваш номер телефона в формате: <b>+998 ** *** ** **</b>\n\n" 
                 "<i><b>Примечание:</b> если Вы планируете оплатить заказ онлайн с помощью Click или Payme, то "
                 "пожалуйста, укажите номер телефона, на который зарегистрирован аккаунт в соответствующем сервисе.</i>")
+
         phone_request_msg = await call.message.answer(text=text, reply_markup=get_contact_kb)
         await state.update_data(phone_request_msg_id=phone_request_msg.message_id)
         await Order.GetContact.set()
         return
     elif action == "clear_cart":
+        await call.answer()
         async with state.proxy() as data:
             data["selected_products"] = {}
+
         await call.message.edit_text("🧹 Корзина очищена")
         keyboard = await categories_keyboard(session=session)
         menu_msg = await call.message.answer("🍴 Выберите категорию:", reply_markup=keyboard)
         await state.update_data(ph_msg_id=None, menu_msg_id=menu_msg.message_id, quantity_counter=1)
-    elif action == "set_delivery_time":
-        await call.answer("Пока что в разработке")
 
 
 @rate_limit(1)

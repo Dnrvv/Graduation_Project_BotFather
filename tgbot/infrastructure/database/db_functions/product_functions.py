@@ -1,11 +1,11 @@
-from sqlalchemy import select, update, func, delete, and_
+from sqlalchemy import select, update, func, delete, and_, or_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncResult, AsyncSession
 
 from tgbot.infrastructure.database.db_models.order_models import Product
 
 
-async def add_product(session: AsyncSession, photo_file_id: str, category_code: str, category_name: str,
+async def add_product(session: AsyncSession, photo_file_id: str, photo_link: str, category_code: str, category_name: str,
                       product_name: str, product_caption: str, product_price: int):
     insert_stmt = select(
         Product
@@ -14,6 +14,7 @@ async def add_product(session: AsyncSession, photo_file_id: str, category_code: 
             Product
         ).values(
             photo_file_id=photo_file_id,
+            photo_link=photo_link,
             category_code=category_code,
             category_name=category_name,
             product_name=product_name,
@@ -47,8 +48,6 @@ async def get_categories(session: AsyncSession):
 
     result: AsyncResult = await session.execute(stmt)
     categories = result.all()
-    # category_dict = {category.category_code: category.category_name for category in categories}
-    # return category_dict
     category_dict = {}
 
     for category in categories:
@@ -76,14 +75,30 @@ async def get_categories(session: AsyncSession):
     return category_dict
 
 
-async def get_products(session: AsyncSession, category_code: str):
+async def get_products(session: AsyncSession, category_code: str = None):
+    if not category_code:
+        stmt = select(Product).order_by(Product.product_name)
+        result: AsyncResult = await session.scalars(stmt)
+        return result.unique().all()
     stmt = select(Product).where(Product.category_code == category_code)
+    result: AsyncResult = await session.scalars(stmt)
+    return result.unique().all()
+
+
+async def get_products_via_query(session: AsyncSession, search_text: str):
+    stmt = select(Product).where(or_(Product.product_name.like(f"%{search_text}%")))
     result: AsyncResult = await session.scalars(stmt)
     return result.unique().all()
 
 
 async def get_product(session: AsyncSession, product_id: int):
     stmt = select(Product).where(Product.product_id == product_id)
+    result: AsyncResult = await session.scalars(stmt)
+    return result.first()
+
+
+async def get_product_by_name(session: AsyncSession, product_name: str):
+    stmt = select(Product).where(Product.product_name == product_name)
     result: AsyncResult = await session.scalars(stmt)
     return result.first()
 

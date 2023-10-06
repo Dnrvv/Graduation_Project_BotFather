@@ -8,7 +8,7 @@ from tgbot.keyboards.pagination_kbs import user_orders_kb, orders_pagination_cal
 from tgbot.keyboards.reply_kbs import order_type_kb, main_menu_kb, reply_cancel_kb
 from tgbot.middlewares.throttling import rate_limit
 from tgbot.misc.states import Order, Feedback
-from tgbot.services.parse_functions import parse_user_order_text
+from tgbot.services.text_formatting_functions import create_order_text
 
 
 @rate_limit(1)
@@ -33,7 +33,7 @@ async def user_orders(message: types.Message, session: AsyncSession):
         return
     order_obj = await order_functions.get_user_order_pagination(session, cust_telegram_id=message.from_user.id,
                                                                 counter=1)
-    text = await parse_user_order_text(order_obj, session)
+    text = await create_order_text(order_obj, session)
     await message.answer(text=text, reply_markup=user_orders_kb(orders_count=orders_count))
 
 
@@ -54,7 +54,7 @@ async def show_chosen_page(call: types.CallbackQuery, callback_data: dict, sessi
     order_obj = await order_functions.get_user_order_pagination(session, cust_telegram_id=call.from_user.id,
                                                                 counter=int(current_page))
 
-    text = await parse_user_order_text(order_obj, session)
+    text = await create_order_text(order_obj, session)
     keyboard = user_orders_kb(orders_count=orders_count, page=int(current_page))
     await call.message.edit_text(text=text, reply_markup=keyboard)
 

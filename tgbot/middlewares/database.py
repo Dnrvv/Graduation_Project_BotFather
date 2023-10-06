@@ -1,13 +1,18 @@
 from typing import Dict, Any
 
+from aiogram import Bot
+from aiogram.dispatcher.handler import CancelHandler
 from aiogram.dispatcher.middlewares import LifetimeControllerMiddleware
 from aiogram.types import CallbackQuery, Message
 from aiogram.types.base import TelegramObject
 
+
 from sqlalchemy.ext.asyncio import AsyncSession
-import tgbot.config
-from tgbot.config import Config
-from tgbot.infrastructure.database.db_functions.user_functions import get_user, add_user
+from tgbot.infrastructure.database.db_functions.user_functions import get_user
+from tgbot.keyboards.reply_kbs import check_subscription_kb
+from tgbot.misc.dependences import CHANNEL_USERNAME
+from tgbot.services.broadcast_functions import send_text
+from tgbot.services.service_functions import is_subscribed
 
 
 class DatabaseMiddleware(LifetimeControllerMiddleware):
@@ -24,22 +29,25 @@ class DatabaseMiddleware(LifetimeControllerMiddleware):
         if not getattr(obj, "from_user", None):
             return
 
-        if obj.from_user:
-            user = await get_user(session, telegram_id=obj.from_user.id)
+        bot = Bot.get_current()
 
+        if obj.get_args():
+            try:
+                int(obj.get_args())
+            except TypeError:
+                await send_text(bot=bot, user_id=obj.from_user.id, text="😔 Некорректная ссылка.")
+                raise CancelHandler()
+            return
+
+        elif obj.from_user:
+            user = await get_user(session, telegram_id=obj.from_user.id)
             if not user:
-                config: Config = tgbot.config.load_config()
-                if obj.from_user.id in config.tg_bot.admin_ids:
-                    await add_user(session, telegram_id=obj.from_user.id, full_name=obj.from_user.full_name,
-                                   role="admin")
-                # elif obj.from_user.id in config.tg_bot.moderator_ids:
-                #     await add_user(session, telegram_id=obj.from_user.id, role="moderator")
-                # elif obj.from_user.id in config.tg_bot.spectator_ids:
-                #     await add_user(session, telegram_id=obj.from_user.id, role="spectator")
-                else:
-                    await add_user(session, telegram_id=obj.from_user.id, full_name=obj.from_user.full_name,
-                                   role="customer")
-                await session.commit()
+                if not await is_subscribed(user_id=obj.from_user.id, channel=CHANNEL_USERNAME):
+                    text = (f"😋 Для доступа к боту Вам необходимо подписаться на канал: <b>{CHANNEL_USERNAME}</b>."
+                            f"\n\n<i>После подписки нажмите на кнопку ниже:</i>")
+                    await send_text(bot=bot, user_id=obj.from_user.id, text=text, reply_markup=check_subscription_kb)
+                    raise CancelHandler()
+
             data['user'] = user
 
     async def post_process(self, obj: TelegramObject, data: Dict, *args: Any) -> None:

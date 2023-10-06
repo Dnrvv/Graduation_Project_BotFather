@@ -5,9 +5,10 @@ from aiogram import Bot
 from aiogram.utils import exceptions
 
 
-async def send_text(bot: Bot, user_id: int, text: str, disable_notification: bool = False) -> bool:
+async def send_text(bot: Bot, user_id: int, text: str, disable_notification: bool = False, reply_markup=None) -> bool:
     try:
-        await bot.send_message(chat_id=user_id, text=text, disable_notification=disable_notification)
+        await bot.send_message(chat_id=user_id, text=text, disable_notification=disable_notification,
+                               reply_markup=reply_markup)
     except exceptions.BotBlocked:
         logging.error(f"Target [ID:{user_id}]: blocked by user")
     except exceptions.ChatNotFound:
@@ -15,7 +16,7 @@ async def send_text(bot: Bot, user_id: int, text: str, disable_notification: boo
     except exceptions.RetryAfter as e:
         logging.error(f"Target [ID:{user_id}]: Flood limit is exceeded. Sleep {e.timeout} seconds.")
         await asyncio.sleep(e.timeout)
-        return await send_text(bot, user_id, text)  # Recursive call
+        return await send_text(bot, user_id, text, reply_markup)  # Recursive call
     except exceptions.UserDeactivated:
         logging.error(f"Target [ID:{user_id}]: user is deactivated")
     except exceptions.TelegramAPIError:

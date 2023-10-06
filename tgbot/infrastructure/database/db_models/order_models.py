@@ -20,6 +20,7 @@ class OrderProduct(DatabaseModel):
 class Product(DatabaseModel):
     product_id = Column(Integer, nullable=False, autoincrement=True, primary_key=True)
     photo_file_id = Column(VARCHAR(150), nullable=False)
+    photo_link = Column(VARCHAR(500), nullable=False)
 
     category_code = Column(VARCHAR(20))
     category_name = Column(VARCHAR(25))

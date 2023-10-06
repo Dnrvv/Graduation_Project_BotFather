@@ -8,7 +8,8 @@ async def set_bot_commands(dp, config: Config):
     default_commands = {
         "start": "Перезапустить бота",
         "order": "Сделать заказ",
-        "help": "Помощь"
+        "help": "Помощь",
+        "my_referer_link": "Ссылка для приглашения"
     }
 
     admin_commands = {
@@ -16,7 +17,8 @@ async def set_bot_commands(dp, config: Config):
         "order": "Сделать заказ",
         "notify_users": "Уведомить пользователей",
         "statistics": "Статистика бота",
-        "moderation_menu": "Меню модерации"
+        "moderation_menu": "Меню модерации",
+        "my_referer_link": "Ссылка для приглашения"
     }
 
     await dp.bot.set_my_commands(

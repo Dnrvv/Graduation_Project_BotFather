@@ -27,9 +27,6 @@ async def get_address(lat, lon):
         street = data.get('address', {}).get('road', 'Unknown Street')
         house_number = data.get('address', {}).get('house_number', '')
 
-        if city != "Ташкент":
-            return -1
-
         if "Unknown" in street:
             street = "Неизвестная улица"
         else:

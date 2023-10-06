@@ -1,9 +1,9 @@
-from sqlalchemy import select, update, func, delete, and_
+from sqlalchemy import select, update, func, and_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncResult, AsyncSession
 
 from tgbot.infrastructure.database.db_models.order_models import Order
-from tgbot.infrastructure.database.db_models.user_models import User, BlockedUser, Address, Feedback
+from tgbot.infrastructure.database.db_models.user_models import User, Address, Feedback
 from tgbot.services.service_functions import generate_random_id
 
 
@@ -18,23 +18,6 @@ async def add_user(session: AsyncSession, telegram_id: int, full_name: str, role
             full_name=full_name,
             role=role
         ).returning(User).on_conflict_do_nothing()
-    )
-    result = await session.scalars(insert_stmt)
-    return result.first()
-
-
-async def add_blocked_user(session: AsyncSession, blocked_user_id: int, blocked_by_moderator_id: int,
-                           block_reason: str = None):
-    insert_stmt = select(
-        BlockedUser
-    ).from_statement(
-        insert(
-            BlockedUser
-        ).values(
-            blocked_user_id=blocked_user_id,
-            blocked_by_moderator_id=blocked_by_moderator_id,
-            block_reason=block_reason
-        ).returning(BlockedUser).on_conflict_do_nothing()
     )
     result = await session.scalars(insert_stmt)
     return result.first()
@@ -93,17 +76,6 @@ async def get_user_addresses(session: AsyncSession, cust_telegram_id: int):
     stmt = select(Address.address).where(Address.cust_telegram_id == cust_telegram_id)
     result: AsyncResult = await session.scalars(stmt)
     return result.unique().all()
-
-
-async def unblock_user(session: AsyncSession, blocked_user_id: int):
-    stmt = delete(BlockedUser).where(BlockedUser.blocked_user_id == blocked_user_id)
-    await session.execute(stmt)
-
-
-async def get_blocked_user(session: AsyncSession, blocked_user_id: int):
-    stmt = select(BlockedUser).where(BlockedUser.blocked_user_id == blocked_user_id)
-    result: AsyncResult = await session.scalars(stmt)
-    return result.first()
 
 
 async def get_user(session: AsyncSession, telegram_id: int) -> User:

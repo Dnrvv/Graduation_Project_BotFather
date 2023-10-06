@@ -6,10 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from tgbot.infrastructure.database.db_functions import product_functions
 from tgbot.keyboards.menu_inline_kbs import categories_keyboard, items_keyboard, \
-    item_keyboard, cafe_menu_cd, order_products_cd, cart_keyboard
+    item_keyboard, cafe_menu_cd, order_products_cd, cart_keyboard, cart_products_cd
 from tgbot.keyboards.reply_kbs import main_menu_kb
+from tgbot.middlewares.throttling import rate_limit
+from tgbot.misc.dependences import MAX_PRODUCT_IN_CART_QUANTITY
 from tgbot.misc.states import Order
-from tgbot.services.service_functions import number_to_emoji, format_number_with_spaces
+from tgbot.services.text_formatting_functions import create_cart_text
+from tgbot.services.service_functions import format_number_with_spaces
 
 
 async def back_to_main_menu(call: types.CallbackQuery, state: FSMContext, session: AsyncSession,
@@ -46,20 +49,27 @@ async def list_items(call: types.CallbackQuery, category, state: FSMContext, ses
     await call.message.edit_text(text="😋 Выберите продукт:", reply_markup=keyboard)
 
 
-async def show_item(call: types.CallbackQuery, category, product_id, state: FSMContext, session: AsyncSession):
-    await call.answer()
+async def show_item(message: Union[types.Message, types.CallbackQuery], category, product_id, state: FSMContext,
+                    session: AsyncSession):
     keyboard = await item_keyboard(category=category, product_id=int(product_id), session=session)
-    user_id = call.from_user.id
     product_obj = await product_functions.get_product(session, product_id=int(product_id))
     text = (f"<b>{product_obj.product_name}</b>\n\n"
             f"{product_obj.product_caption}\n\n"
             f"Цена: {format_number_with_spaces(product_obj.product_price)} сум\n\n"
             f"Укажите количество:")
     photo = product_obj.photo_file_id
-    await call.bot.delete_message(chat_id=user_id, message_id=call.message.message_id)
-    ph_msg = await call.bot.send_photo(photo=photo, chat_id=user_id, caption=text, reply_markup=keyboard)
+    ph_msg = None
+    if isinstance(message, types.Message):
+        user_id = message.from_user.id
+        ph_msg = await message.bot.send_photo(photo=photo, chat_id=user_id, caption=text, reply_markup=keyboard)
 
-    # СЛЕДИТЬ ЗА СЧЕТЧИКОМ!!!!!
+    elif isinstance(message, types.CallbackQuery):
+        call = message
+        await call.answer()
+        user_id = call.from_user.id
+        await call.bot.delete_message(chat_id=user_id, message_id=call.message.message_id)
+        ph_msg = await call.bot.send_photo(photo=photo, chat_id=user_id, caption=text, reply_markup=keyboard)
+
     await state.update_data(ph_msg_id=ph_msg.message_id, menu_msg_id=None, quantity_counter=1)
 
 
@@ -73,8 +83,8 @@ async def change_product_quantity(call: types.CallbackQuery, callback_data: dict
         await call.answer("Минимальное количество - 1 шт.", show_alert=False)
         return
 
-    elif quantity_counter > 100:
-        await call.answer("Максимальное количество - 100 шт.", show_alert=False)
+    elif quantity_counter > MAX_PRODUCT_IN_CART_QUANTITY:
+        await call.answer(f"Максимальное количество - {MAX_PRODUCT_IN_CART_QUANTITY} шт.", show_alert=False)
         return
 
     if product_id == "counter":
@@ -87,9 +97,40 @@ async def change_product_quantity(call: types.CallbackQuery, callback_data: dict
                                                                           session, quantity_counter))
 
 
-async def add_product_to_cart(call: types.CallbackQuery, category, product_id, state: FSMContext, session: AsyncSession):
-    # Тут будет взаимодействие с category и product_id (а именно - добавление в корзину)
+async def choose_product_inline_query(query: types.InlineQuery, session: AsyncSession):
+    if len(query.query) >= 2:
+        search_text = query.query
+        products_list = await product_functions.get_products_via_query(session, search_text=search_text)
+    else:
+        products_list = await product_functions.get_products(session)
+    results = []
+    for product in products_list:
+        results.append(types.InlineQueryResultArticle(
+            id=f"{product.product_id}",
+            thumb_url=f"{product.photo_link}",
+            title=f"{product.product_name}",
 
+            description=f"{format_number_with_spaces(product.product_price)} сум",
+            input_message_content=types.InputTextMessageContent(
+                message_text=f"{product.product_name}",
+                parse_mode="HTML"
+            ),
+        ))
+    await query.answer(cache_time=5, is_personal=True, results=results)
+
+
+@rate_limit(1)
+async def show_item_via_inline_query(message: types.Message, state: FSMContext, session: AsyncSession):
+    product_name = message.text
+    product_obj = await product_functions.get_product_by_name(session, product_name=product_name)
+    if not product_obj:
+        await message.answer("Ошибка. Такого товара нет.")
+        return
+    await show_item(message, category=product_obj.category_code, product_id=product_obj.product_id,
+                    state=state, session=session)
+
+
+async def add_product_to_cart(call: types.CallbackQuery, category, product_id, state: FSMContext, session: AsyncSession):
     async with state.proxy() as data:
         quantity_counter = data.get("quantity_counter")
         selected_products = data.get("selected_products", {})
@@ -114,25 +155,49 @@ async def show_cart(call: types.CallbackQuery, category, product_id, state: FSMC
         return
 
     await call.answer()
-    cart_text = "📥 <b>Корзина:</b>\n\n"
-    total_products_cost = 0
-
-    for product_id, quantity in selected_products.items():
-        product_obj = await product_functions.get_product(session, product_id=int(product_id))
-
-        cart_product_cost = quantity * product_obj.product_price
-        total_products_cost += cart_product_cost
-
-        cart_text += f"<b>{product_obj.product_name}</b>\n"
-        cart_text += (f"<b> {number_to_emoji(quantity)}</b> ✖️ {format_number_with_spaces(product_obj.product_price)} "
-                      f"= {format_number_with_spaces(cart_product_cost)} сум \n")
-
-    cart_text += (f"\n<b>Продукты:</b> {format_number_with_spaces(total_products_cost)} сум\n"
-                  f"<b>Доставка:</b> {format_number_with_spaces(delivery_cost)} сум\n"
-                  f"<b>Итого: {format_number_with_spaces(total_products_cost + delivery_cost)} сум</b>")
+    cart_text, total_products_cost = await create_cart_text(selected_products=selected_products,
+                                                            delivery_cost=delivery_cost, session=session)
     await state.update_data(total_products_cost=total_products_cost)
-    await call.message.edit_text(text=cart_text, reply_markup=await cart_keyboard(category=category,
-                                                                                  session=session))
+    await call.message.edit_text(text=cart_text, reply_markup=await cart_keyboard(category=category, session=session,
+                                                                                  selected_products=selected_products))
+
+
+async def change_cart_products_quantity(call: types.CallbackQuery, callback_data: dict, state: FSMContext,
+                                        session: AsyncSession):
+    product_id = int(callback_data.get("product_id"))
+    category = callback_data.get("category")
+    product_quantity = int(callback_data.get("product_quantity"))
+    async with state.proxy() as data:
+        delivery_cost = data.get("delivery_cost")
+        selected_products = data.get("selected_products", {})
+
+    if product_quantity <= 0:
+        await call.answer()
+        del selected_products[product_id]
+
+    elif product_quantity > MAX_PRODUCT_IN_CART_QUANTITY:
+        await call.answer(f"Максимальное количество - {MAX_PRODUCT_IN_CART_QUANTITY} шт.", show_alert=False)
+        return
+
+    elif product_id == "product_name":
+        await call.answer(f"Количество, которое Вы указали: {product_quantity}", show_alert=False)
+        return
+
+    elif product_quantity > 0:
+        await call.answer()
+        selected_products[product_id] = product_quantity
+
+    if not selected_products:
+        await state.update_data(selected_products=selected_products, total_products_cost=0)
+        await list_categories(call, state=state, session=session)
+        return
+
+    cart_text, total_products_cost = await create_cart_text(selected_products=selected_products,
+                                                            delivery_cost=delivery_cost, session=session)
+    await call.message.edit_text(text=cart_text, reply_markup=await cart_keyboard(category=category, session=session,
+                                                                                  selected_products=selected_products))
+
+    await state.update_data(selected_products=selected_products, total_products_cost=total_products_cost)
 
 
 async def global_navigate(call: types.CallbackQuery, callback_data: dict, state: FSMContext, session: AsyncSession):
@@ -157,4 +222,9 @@ async def global_navigate(call: types.CallbackQuery, callback_data: dict, state:
 
 def register_order_menu(dp: Dispatcher):
     dp.register_callback_query_handler(global_navigate, cafe_menu_cd.filter(), state=Order.Menu)
+
+    dp.register_inline_handler(choose_product_inline_query, state=Order.Menu)
+    dp.register_message_handler(show_item_via_inline_query, state=Order.Menu)
+
     dp.register_callback_query_handler(change_product_quantity, order_products_cd.filter(), state=Order.Menu)
+    dp.register_callback_query_handler(change_cart_products_quantity, cart_products_cd.filter(), state=Order.Menu)

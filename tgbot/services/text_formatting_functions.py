@@ -4,7 +4,27 @@ from tgbot.infrastructure.database.db_functions import order_functions, product_
 from tgbot.services.service_functions import format_number_with_spaces, number_to_emoji
 
 
-async def parse_user_order_text(order_obj, session: AsyncSession):
+async def create_cart_text(selected_products: dict, delivery_cost: int, session: AsyncSession):
+    cart_text = "📥 <b>Корзина:</b>\n\n"
+    total_products_cost = 0
+
+    for product_id, quantity in selected_products.items():
+        product_obj = await product_functions.get_product(session, product_id=int(product_id))
+
+        cart_product_cost = quantity * product_obj.product_price
+        total_products_cost += cart_product_cost
+
+        cart_text += f"<b>{product_obj.product_name}</b>\n"
+        cart_text += (f"<b> {number_to_emoji(quantity)}</b> ✖️ {format_number_with_spaces(product_obj.product_price)} "
+                      f"= {format_number_with_spaces(cart_product_cost)} сум \n")
+
+    cart_text += (f"\n<b>Продукты:</b> {format_number_with_spaces(total_products_cost)} сум\n"
+                  f"<b>Доставка:</b> {format_number_with_spaces(delivery_cost)} сум\n"
+                  f"<b>Итого: {format_number_with_spaces(total_products_cost + delivery_cost)} сум</b>")
+    return cart_text, total_products_cost
+
+
+async def create_order_text(order_obj, session: AsyncSession):
     delivery_obj = await order_functions.get_delivery_obj(session, order_id=order_obj.order_id)
     order_products = await order_functions.get_user_order_products(session, order_id=order_obj.order_id)
 
@@ -32,8 +52,8 @@ async def parse_user_order_text(order_obj, session: AsyncSession):
     return text
 
 
-async def parse_edited_product(product_id: int, session: AsyncSession, product_name: str = None,
-                               product_caption: str = None, product_price: int = None):
+async def create_edited_product_text(product_id: int, session: AsyncSession, product_name: str = None,
+                                     product_caption: str = None, product_price: int = None):
     old_product_obj = await product_functions.get_product(session, product_id=product_id)
     text = ""
     if product_name:

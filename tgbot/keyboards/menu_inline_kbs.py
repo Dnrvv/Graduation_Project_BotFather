@@ -7,7 +7,9 @@ from tgbot.infrastructure.database.db_functions import product_functions
 cafe_menu_cd = CallbackData("show_menu", "level", "category", "product_id")
 interaction_with_item_cd = CallbackData("action", "product_id")
 order_products_cd = CallbackData("order", "product_id", "category", "quantity_counter")
+
 cart_actions_cd = CallbackData("cart", "action")
+cart_products_cd = CallbackData("cart", "product_id", "category", "product_quantity")
 
 
 def make_callback_data(level, product_id="0", category="0"):
@@ -84,7 +86,7 @@ async def item_keyboard(category, product_id, session: AsyncSession, quantity_co
     keyboard = InlineKeyboardMarkup(row_width=3)
     product = await product_functions.get_product(session, product_id=product_id)
     keyboard.row(
-        InlineKeyboardButton(text="➖",
+        InlineKeyboardButton(text="-",
                              callback_data=order_products_cd.new(product_id=product_id, category=category,
                                                                  quantity_counter=f"{quantity_counter - 1}")),
 
@@ -92,7 +94,7 @@ async def item_keyboard(category, product_id, session: AsyncSession, quantity_co
                              callback_data=order_products_cd.new(product_id="counter", category="category",
                                                                  quantity_counter=f"{quantity_counter}")),
 
-        InlineKeyboardButton(text="➕",
+        InlineKeyboardButton(text="+",
                              callback_data=order_products_cd.new(product_id=product_id, category=category,
                                                                  quantity_counter=f"{quantity_counter + 1}"))
     )
@@ -104,8 +106,7 @@ async def item_keyboard(category, product_id, session: AsyncSession, quantity_co
     return keyboard
 
 
-async def cart_keyboard(category, session: AsyncSession):
-    # Сюда еще надо загнать список selected_products
+async def cart_keyboard(category, selected_products: dict, session: AsyncSession):
     current_level = 4
     keyboard = InlineKeyboardMarkup(row_width=2)
     keyboard.row(
@@ -118,7 +119,21 @@ async def cart_keyboard(category, session: AsyncSession):
     keyboard.row(
         InlineKeyboardButton(text="🧹 Очистить корзину",
                              callback_data=cart_actions_cd.new(action="clear_cart"))
-        # InlineKeyboardButton(text="⏰ Время доставки",
-        #                      callback_data=cart_actions_cd.new(action="set_delivery_time"))
     )
+
+    for product_id, product_quantity in selected_products.items():
+        product = await product_functions.get_product(session, product_id=int(product_id))
+        keyboard.row(
+            InlineKeyboardButton(text="-", callback_data=cart_products_cd.new(product_id=product.product_id,
+                                                                              category=category,
+                                                                              product_quantity=f"{product_quantity - 1}")),
+            InlineKeyboardButton(text=f"{product.product_name}",
+                                 callback_data=cart_products_cd.new(product_id="product_name",
+                                                                    category=category,
+                                                                    product_quantity=f"{product_quantity}")
+                                 ),
+            InlineKeyboardButton(text="+", callback_data=cart_products_cd.new(product_id=product.product_id,
+                                                                              category=category,
+                                                                              product_quantity=f"{product_quantity + 1}"))
+        )
     return keyboard

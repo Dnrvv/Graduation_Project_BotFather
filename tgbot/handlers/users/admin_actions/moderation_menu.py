@@ -13,7 +13,7 @@ from tgbot.keyboards.reply_kbs import reply_approve_kb, main_menu_kb, reply_canc
 from tgbot.middlewares.throttling import rate_limit
 from tgbot.misc.dependences import PRODUCT_NAME_LENGTH, PRODUCT_CAPTION_LENGTH
 from tgbot.misc.states import ModerationActions
-from tgbot.services.parse_functions import parse_edited_product
+from tgbot.services.text_formatting_functions import create_edited_product_text
 from tgbot.services.service_functions import format_number_with_spaces
 
 
@@ -152,7 +152,7 @@ async def get_new_product_parameter(message: types.Message, state: FSMContext, s
         if message.document:
             await message.answer("❗️ Отправьте фото не файлом.")
             return
-        caption = await parse_edited_product(product_id=int(product_id), session=session)
+        caption = await create_edited_product_text(product_id=int(product_id), session=session)
         caption += "💾 <b>Сохранить изменения?</b>"
         await message.answer_photo(photo=message.photo[-1].file_id, caption=caption, reply_markup=reply_approve_kb)
         await state.update_data(photo_file_id=message.photo[-1].file_id)
@@ -162,7 +162,7 @@ async def get_new_product_parameter(message: types.Message, state: FSMContext, s
             await message.answer(f"❗️ Длина названия продукта должна составлять не более "
                                  f"{PRODUCT_NAME_LENGTH} символов!")
             return
-        caption = await parse_edited_product(product_id=int(product_id), session=session, product_name=message.text)
+        caption = await create_edited_product_text(product_id=int(product_id), session=session, product_name=message.text)
         caption += "💾 <b>Сохранить изменения?</b>"
         old_product_obj = await product_functions.get_product(session, product_id=int(product_id))
         await message.answer_photo(photo=old_product_obj.photo_file_id, caption=caption, reply_markup=reply_approve_kb)
@@ -173,7 +173,7 @@ async def get_new_product_parameter(message: types.Message, state: FSMContext, s
             await message.answer(f"❗️ Длина описания продукта должна составлять не более {PRODUCT_CAPTION_LENGTH}"
                                  f" символов!")
             return
-        caption = await parse_edited_product(product_id=int(product_id), session=session, product_caption=message.text)
+        caption = await create_edited_product_text(product_id=int(product_id), session=session, product_caption=message.text)
         caption += "💾 <b>Сохранить изменения?</b>"
         old_product_obj = await product_functions.get_product(session, product_id=int(product_id))
         await message.answer_photo(photo=old_product_obj.photo_file_id, caption=caption, reply_markup=reply_approve_kb)
@@ -183,8 +183,8 @@ async def get_new_product_parameter(message: types.Message, state: FSMContext, s
         if not message.text.isdigit() or isinstance(message.text, float):
             await message.answer("❗️ Введите целочисленное значение!")
             return
-        caption = await parse_edited_product(product_id=int(product_id), session=session,
-                                             product_price=int(message.text))
+        caption = await create_edited_product_text(product_id=int(product_id), session=session,
+                                                   product_price=int(message.text))
         caption += "💾 <b>Сохранить изменения?</b>"
         old_product_obj = await product_functions.get_product(session, product_id=int(product_id))
         await message.answer_photo(photo=old_product_obj.photo_file_id, caption=caption, reply_markup=reply_approve_kb)
