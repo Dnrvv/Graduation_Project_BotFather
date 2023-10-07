@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncResult, AsyncSession
 from tgbot.infrastructure.database.db_models.order_models import Product
 
 
-async def add_product(session: AsyncSession, photo_file_id: str, photo_link: str, category_code: str, category_name: str,
+async def add_product(session: AsyncSession, photo_file_id: str, photo_web_link: str, category_code: str, category_name: str,
                       product_name: str, product_caption: str, product_price: int):
     insert_stmt = select(
         Product
@@ -14,7 +14,7 @@ async def add_product(session: AsyncSession, photo_file_id: str, photo_link: str
             Product
         ).values(
             photo_file_id=photo_file_id,
-            photo_link=photo_link,
+            photo_web_link=photo_web_link,
             category_code=category_code,
             category_name=category_name,
             product_name=product_name,

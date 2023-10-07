@@ -1,16 +1,6 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 
-check_subscription_kb = ReplyKeyboardMarkup(
-    resize_keyboard=True,
-    keyboard=[
-        [
-            KeyboardButton(text="✅ Проверить подписку")
-        ]
-    ]
-)
-
-
 main_menu_kb = ReplyKeyboardMarkup(
     resize_keyboard=True,
     keyboard=[
@@ -96,7 +86,7 @@ order_approve_kb = ReplyKeyboardMarkup(
 )
 
 
-def delivery_location_kb(has_addresses: bool = False):
+def location_methods_kb(has_addresses: bool = False):
     keyboard = ReplyKeyboardMarkup(
         resize_keyboard=True,
         keyboard=[

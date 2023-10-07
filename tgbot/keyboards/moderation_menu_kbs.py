@@ -88,6 +88,9 @@ async def moderation_item_kb(category, product_id, session: AsyncSession):
         InlineKeyboardButton(text="Фото",
                              callback_data=product_moderation_cd.new(product_id=product_id, category=category,
                                                                      action="edit_photo")),
+        InlineKeyboardButton(text="Превью",
+                             callback_data=product_moderation_cd.new(product_id=product_id, category=category,
+                                                                     action="edit_photo_web_link")),
         InlineKeyboardButton(text="Название",
                              callback_data=product_moderation_cd.new(product_id=product_id, category=category,
                                                                      action="edit_name")),
@@ -108,6 +111,7 @@ async def moderation_item_kb(category, product_id, session: AsyncSession):
     keyboard.row(buttons[0], buttons[1])
     keyboard.row(buttons[2], buttons[3])
     keyboard.row(buttons[4])
+    keyboard.row(buttons[5])
 
     keyboard.row(InlineKeyboardButton(text="⬅️ Назад", callback_data=make_callback_data(level=current_level - 1,
                                                                                         category=category)))

@@ -1,3 +1,4 @@
+import re
 from typing import Union
 
 from aiogram import types, Dispatcher
@@ -11,7 +12,7 @@ from tgbot.keyboards.moderation_menu_kbs import moderation_mm_kb, moderation_mm_
     moderation_categories_kb, moderation_items_kb, moderation_item_kb, moderation_menu_cd, product_moderation_cd
 from tgbot.keyboards.reply_kbs import reply_approve_kb, main_menu_kb, reply_cancel_kb
 from tgbot.middlewares.throttling import rate_limit
-from tgbot.misc.dependences import PRODUCT_NAME_LENGTH, PRODUCT_CAPTION_LENGTH
+from tgbot.misc.dependences import PRODUCT_NAME_LENGTH, PRODUCT_CAPTION_LENGTH, IMAGE_LINK_RE_PATTERN
 from tgbot.misc.states import ModerationActions
 from tgbot.services.text_formatting_functions import create_edited_product_text
 from tgbot.services.service_functions import format_number_with_spaces
@@ -118,6 +119,8 @@ async def get_item_action(call: types.CallbackQuery, callback_data: dict, state:
 
     if action == "edit_photo":
         await call.message.answer("Отправьте новое <b>фото</b> продукта (не файлом!):", reply_markup=reply_cancel_kb)
+    elif action == "edit_photo_web_link":
+        await call.message.answer("Отправьте новую WEB-ссылку:", reply_markup=reply_cancel_kb)
     elif action == "edit_name":
         await call.message.answer(f"Отправьте новое <b>название</b> продукта (максимум "
                                   f"{PRODUCT_NAME_LENGTH} символов):", reply_markup=reply_cancel_kb)
@@ -156,6 +159,22 @@ async def get_new_product_parameter(message: types.Message, state: FSMContext, s
         caption += "💾 <b>Сохранить изменения?</b>"
         await message.answer_photo(photo=message.photo[-1].file_id, caption=caption, reply_markup=reply_approve_kb)
         await state.update_data(photo_file_id=message.photo[-1].file_id)
+
+    elif action == "edit_photo_web_link":
+        web_link = message.text
+
+        if not re.match(pattern=IMAGE_LINK_RE_PATTERN, string=web_link):
+            await message.answer("❗️ Некорректная ссылка. Повторите попытку:")
+            return
+
+        try:
+            await message.answer_photo(photo=web_link, caption="✅ Ссылка корректна.\n💾 <b>Сохранить изменения?</b>",
+                                       reply_markup=reply_approve_kb)
+        except Exception as err:
+            await message.answer(f"Ошибка: {err}. Повторите попытку:")
+            return
+
+        await state.update_data(photo_web_link=web_link)
 
     elif action == "edit_name":
         if len(message.text) > PRODUCT_NAME_LENGTH:
@@ -203,6 +222,12 @@ async def edit_product_approve(message: types.Message, state: FSMContext, sessio
             photo_file_id = data.get("photo_file_id")
             await product_functions.update_product(session, Product.product_id == product_id,
                                                    photo_file_id=photo_file_id)
+
+        elif action == "edit_photo_web_link":
+            photo_web_link = data.get("photo_web_link")
+            await product_functions.update_product(session, Product.product_id == product_id,
+                                                   photo_web_link=photo_web_link)
+
         elif action == "edit_name":
             product_name = data.get("product_name")
             await product_functions.update_product(session, Product.product_id == product_id,

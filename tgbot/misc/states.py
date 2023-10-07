@@ -29,6 +29,7 @@ class ModerationActions(StatesGroup):
     ProductsMenu = State()
 
     GetProductPhoto = State()
+    GetProductPhotoWebLink = State()
     GetProductCategoryCode = State()
     GetProductCategoryName = State()
     GetProductName = State()

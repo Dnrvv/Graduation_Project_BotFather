@@ -8,16 +8,16 @@ async def set_bot_commands(dp, config: Config):
     default_commands = {
         "start": "Перезапустить бота",
         "order": "Сделать заказ",
-        "help": "Помощь",
+        "my_balance": "Мой баланс",
         "my_referer_link": "Ссылка для приглашения"
     }
 
     admin_commands = {
         "start": "Перезапустить бота",
-        "order": "Сделать заказ",
         "notify_users": "Уведомить пользователей",
         "statistics": "Статистика бота",
         "moderation_menu": "Меню модерации",
+        "my_balance": "Мой баланс",
         "my_referer_link": "Ссылка для приглашения"
     }
 

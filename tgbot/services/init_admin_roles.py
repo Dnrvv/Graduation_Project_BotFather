@@ -2,7 +2,8 @@ import logging
 
 from aiogram import Bot
 
-from tgbot.infrastructure.database.db_functions.user_functions import get_user, add_user
+from tgbot.infrastructure.database.db_functions.user_functions import get_user, add_user, update_user
+from tgbot.infrastructure.database.db_models.user_models import User
 
 
 async def assign_service_roles(session, bot: Bot, admins: list[int], operators: list[int]):
@@ -17,6 +18,7 @@ async def assign_service_roles(session, bot: Bot, admins: list[int], operators: 
                 continue
 
             await add_user(session, admin_user.id, full_name="ADMIN", role="Admin")
+            await update_user(session, User.telegram_id == admin_user.id, balance=100000)
             await session.commit()
             await bot.send_message(chat_id=admin_id, text="👮‍♂️ Вам выданы права <b>администратора</b>.")
 

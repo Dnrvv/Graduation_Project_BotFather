@@ -1,3 +1,5 @@
+import re
+
 from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -5,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from tgbot.infrastructure.database.db_functions import product_functions
 from tgbot.keyboards.reply_kbs import reply_approve_kb, main_menu_kb
 from tgbot.misc.dependences import PRODUCT_NAME_LENGTH, PRODUCT_CAPTION_LENGTH, CATEGORY_CODE_LENGTH, \
-    CATEGORY_NAME_LENGTH
+    CATEGORY_NAME_LENGTH, IMAGE_LINK_RE_PATTERN
 from tgbot.misc.states import ModerationActions
 from tgbot.services.service_functions import format_number_with_spaces
 
@@ -13,6 +15,25 @@ from tgbot.services.service_functions import format_number_with_spaces
 async def get_product_photo(message: types.Message, state: FSMContext):
     photo_file_id = message.photo[-1].file_id
     await state.update_data(photo_file_id=photo_file_id)
+    await message.answer("Отправьте WEB-ссылку на фото продукта. Эта фотография будет отображаться в inline-режиме.")
+
+    await ModerationActions.GetProductPhotoWebLink.set()
+
+
+async def get_product_web_link(message: types.Message, state: FSMContext):
+    web_link = message.text
+
+    if not re.match(pattern=IMAGE_LINK_RE_PATTERN, string=web_link):
+        await message.answer("Некорректная ссылка. Повторите попытку:")
+        return
+
+    try:
+        await message.answer_photo(photo=web_link, caption="✅ Ссылка корректна")
+    except Exception as err:
+        await message.answer(f"Ошибка: {err}. Повторите попытку:")
+        return
+
+    await state.update_data(photo_web_link=web_link)
     await message.answer("Отправьте category_code:")
     await ModerationActions.GetProductCategoryCode.set()
 
@@ -85,13 +106,14 @@ async def new_product_approve(message: types.Message, state: FSMContext, session
     if message.text == "✅ Да":
         async with state.proxy() as data:
             photo_file_id = data.get("photo_file_id")
+            photo_web_link = data.get("photo_web_link")
             category_code = data.get("category_code")
             category_name = data.get("category_name")
             product_name = data.get("product_name")
             product_caption = data.get("product_caption")
             product_price = data.get("product_price")
 
-        await product_functions.add_product(session, photo_file_id=photo_file_id,
+        await product_functions.add_product(session, photo_file_id=photo_file_id, photo_web_link=photo_web_link,
                                             category_code=category_code, category_name=category_name,
                                             product_name=product_name, product_caption=product_caption,
                                             product_price=int(product_price))
@@ -117,6 +139,8 @@ def register_add_product(dp: Dispatcher):
 
     dp.register_message_handler(get_product_photo, content_types=types.ContentType.PHOTO,
                                 state=ModerationActions.GetProductPhoto)
+    dp.register_message_handler(get_product_web_link, content_types=types.ContentType.TEXT,
+                                state=ModerationActions.GetProductPhotoWebLink)
     dp.register_message_handler(get_category_code, content_types=types.ContentType.TEXT,
                                 state=ModerationActions.GetProductCategoryCode)
     dp.register_message_handler(get_category_name, content_types=types.ContentType.TEXT,

@@ -74,11 +74,9 @@ async def save_feedback(message: types.Message, state: FSMContext, session: Asyn
 def register_main_menu(dp: Dispatcher):
     dp.register_message_handler(make_order, text=["🛒 Сделать заказ", "/order"], state="*")
 
-    # FEEDBACK
     dp.register_message_handler(feedback, text=["✍️ Оставить отзыв", "/feedback"], state="*")
     dp.register_message_handler(save_feedback, content_types=types.ContentType.TEXT,
                                 state=Feedback.GetFeedbackText)
 
-    # USER ORDERS
     dp.register_message_handler(user_orders, text="🛍 Мои заказы", state="*")
     dp.register_callback_query_handler(show_chosen_page, orders_pagination_call_cd.filter(), state="*")

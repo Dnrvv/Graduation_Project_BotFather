@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from tgbot.config import load_config
 from tgbot.handlers.users.order_menu import list_categories
 from tgbot.infrastructure.database.db_functions import user_functions
-from tgbot.keyboards.reply_kbs import delivery_location_kb, main_menu_kb, order_type_kb, saved_locations_kb, \
+from tgbot.keyboards.reply_kbs import location_methods_kb, main_menu_kb, order_type_kb, saved_locations_kb, \
     reply_approve_kb, reply_cancel_kb
 from tgbot.middlewares.throttling import rate_limit
 from tgbot.misc.dependences import KM_DELIVERY_PRICE
@@ -27,11 +27,11 @@ async def get_order_type(message: types.Message, state: FSMContext, session: Asy
         flag = await user_functions.check_user_addresses(session, cust_telegram_id=message.from_user.id)
         if flag:
             await message.answer("📍 Отправьте геопозицию или выберите адрес из сохранённых:",
-                                 reply_markup=delivery_location_kb(has_addresses=flag))
+                                 reply_markup=location_methods_kb(has_addresses=flag))
         else:
-            await message.answer("📍 Отправьте геопозицию:", reply_markup=delivery_location_kb(has_addresses=flag))
-
+            await message.answer("📍 Отправьте геопозицию:", reply_markup=location_methods_kb(has_addresses=flag))
         await Order.GetLocation.set()
+
     elif message.text == "🚶 Самовывоз":
         await state.update_data(order_type="pickup")
 
@@ -41,6 +41,7 @@ async def get_order_type(message: types.Message, state: FSMContext, session: Asy
         await message.answer("❌ Заказ отменён.", reply_markup=main_menu_kb)
         await state.reset_data()
         await state.finish()
+
     else:
         await message.answer("Некорректный ввод. Используйте кнопки ниже:", reply_markup=order_type_kb)
 
@@ -49,7 +50,6 @@ async def get_order_type(message: types.Message, state: FSMContext, session: Asy
 async def choose_saved_delivery_location(message: types.Message, session: AsyncSession):
     addresses = await user_functions.get_user_addresses(session, cust_telegram_id=message.from_user.id)
     await message.answer("Выберите адрес доставки:", reply_markup=saved_locations_kb(addresses=addresses))
-    # await Order.GetLocation.set()
 
 
 @rate_limit(1)
@@ -74,13 +74,13 @@ async def get_delivery_location(message: types.Message, state: FSMContext, sessi
             admins = load_config().tg_bot.admin_ids
             await broadcast(message.bot, users=admins, text=f"🛠 Ошибка при кодировке адреса.")
 
-            await message.answer("Упс, что-то пошло не так... Администрация уже работает над этим.",
+            await message.answer("😯 Упс, что-то пошло не так... Администрация уже работает над этим.",
                                  reply_markup=main_menu_kb)
             await state.reset_data()
             await state.finish()
             return
 
-        elif address == -1:
+        elif address == "Incorrect city":
             if please_wait_msg:
                 await message.bot.delete_message(chat_id=message.from_user.id, message_id=please_wait_msg.message_id)
             await message.answer("😔 По указанному адресу служба доставки не работает. Попробуйте ещё раз:")
@@ -100,13 +100,13 @@ async def get_delivery_location(message: types.Message, state: FSMContext, sessi
     if message.text == "⬅️ Назад":
         if flag:
             await message.answer("📍 Отправьте геопозицию или выберите адрес из сохранённых:",
-                                 reply_markup=delivery_location_kb(has_addresses=flag))
+                                 reply_markup=location_methods_kb(has_addresses=flag))
         else:
-            await message.answer("📍 Отправьте геопозицию:", reply_markup=delivery_location_kb(has_addresses=flag))
+            await message.answer("📍 Отправьте геопозицию:", reply_markup=location_methods_kb(has_addresses=flag))
         return
 
     if not flag:
-        await message.answer("📍 Отправьте геопозицию:", reply_markup=delivery_location_kb(has_addresses=flag))
+        await message.answer("📍 Отправьте геопозицию:", reply_markup=location_methods_kb(has_addresses=flag))
         return
 
     addresses = await user_functions.get_user_addresses(session, cust_telegram_id=message.from_user.id)
@@ -127,7 +127,6 @@ async def get_delivery_location(message: types.Message, state: FSMContext, sessi
 @rate_limit(1)
 async def approve_delivery_location(message: types.Message, state: FSMContext, session: AsyncSession):
     if message.text == "✅ Да":
-
         async with state.proxy() as data:
             latitude = data.get("latitude")
             longitude = data.get("longitude")
@@ -143,10 +142,11 @@ async def approve_delivery_location(message: types.Message, state: FSMContext, s
         flag = await user_functions.check_user_addresses(session, cust_telegram_id=message.from_user.id)
         if flag:
             await message.answer("📍 Отправьте геопозицию или выберите адрес из сохранённых:",
-                                 reply_markup=delivery_location_kb(has_addresses=flag))
+                                 reply_markup=location_methods_kb(has_addresses=flag))
         else:
-            await message.answer("📍 Отправьте геопозицию:", reply_markup=delivery_location_kb(has_addresses=flag))
+            await message.answer("📍 Отправьте геопозицию:", reply_markup=location_methods_kb(has_addresses=flag))
         await Order.GetLocation.set()
+
     else:
         await message.answer("Некорректный ввод. Используйте кнопки ниже:", reply_markup=reply_approve_kb)
         await Order.ApproveLocation.set()

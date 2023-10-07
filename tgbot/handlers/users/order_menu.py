@@ -107,7 +107,7 @@ async def choose_product_inline_query(query: types.InlineQuery, session: AsyncSe
     for product in products_list:
         results.append(types.InlineQueryResultArticle(
             id=f"{product.product_id}",
-            thumb_url=f"{product.photo_link}",
+            thumb_url=f"{product.photo_web_link}",
             title=f"{product.product_name}",
 
             description=f"{format_number_with_spaces(product.product_price)} сум",

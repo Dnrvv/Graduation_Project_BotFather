@@ -6,7 +6,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.contrib.fsm_storage.redis import RedisStorage2
 from sqlalchemy.ext.asyncio import AsyncSession
 from tgbot.config import load_config, Config
-from tgbot.filters.role_filters import AdminFilter, ModeratorFilter, OperatorFilter, SpectatorFilter
+from tgbot.filters.role_filters import AdminFilter, OperatorFilter
 from tgbot.handlers.echo import register_echo
 from tgbot.handlers.errors_handler import register_errors_handler
 from tgbot.handlers.users.admin_actions.add_product import register_add_product
@@ -25,7 +25,6 @@ from tgbot.middlewares.database import DatabaseMiddleware
 from tgbot.middlewares.environment import EnvironmentMiddleware
 from tgbot.middlewares.throttling import ThrottlingMiddleware
 from tgbot.services.add_products import add_products
-from tgbot.services.broadcast_functions import broadcast
 from tgbot.services.init_admin_roles import assign_service_roles
 from tgbot.services.set_bot_commands import set_bot_commands
 
@@ -40,9 +39,7 @@ def register_all_middlewares(dp, session_pool, environment: dict):
 
 def register_all_filters(dp):
     dp.filters_factory.bind(AdminFilter)
-    dp.filters_factory.bind(ModeratorFilter)
     dp.filters_factory.bind(OperatorFilter)
-    dp.filters_factory.bind(SpectatorFilter)
 
 
 def register_all_handlers(dp):
@@ -67,16 +64,11 @@ async def on_startup(session_pool, bot: Bot, config: Config):
     logger.info("Bot started")
     session: AsyncSession = session_pool()
 
+    await add_products(session)
     await add_service_note(session, name="active_users", value_2=0)
-    await add_service_note(session, name="terms_of_use", value_5="none")
     await session.commit()
 
-    await add_products(session)
-
     await assign_service_roles(session, bot, config.tg_bot.admin_ids, config.tg_bot.operator_ids)
-    notify_text = "👨‍💻 Сообщение для администрации:\n<b>Бот запущен!</b> /start"
-    await broadcast(bot, config.tg_bot.admin_ids, notify_text)
-
     await session.close()
 
 
