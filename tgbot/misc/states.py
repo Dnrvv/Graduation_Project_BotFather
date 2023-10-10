@@ -6,6 +6,12 @@ class NotifyUsers(StatesGroup):
     NotifyApprove = State()
 
 
+class ReplenishBalance(StatesGroup):
+    GetPaymentMethod = State()
+    GetReplenishAmount = State()
+    Checkout = State()
+
+
 class Feedback(StatesGroup):
     GetFeedbackText = State()
 
@@ -16,7 +22,6 @@ class Order(StatesGroup):
     ApproveLocation = State()
     Menu = State()
     GetContact = State()
-    GetPaymentType = State()
     OrderApprove = State()
 
 

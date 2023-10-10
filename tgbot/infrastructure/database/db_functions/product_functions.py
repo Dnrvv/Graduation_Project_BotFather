@@ -5,8 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncResult, AsyncSession
 from tgbot.infrastructure.database.db_models.order_models import Product
 
 
-async def add_product(session: AsyncSession, photo_file_id: str, photo_web_link: str, category_code: str, category_name: str,
-                      product_name: str, product_caption: str, product_price: int):
+async def add_product(session: AsyncSession, photo_file_id: str, photo_web_link: str, category_code: str,
+                      category_name: str, product_name: str, product_caption: str, product_price: int):
     insert_stmt = select(
         Product
     ).from_statement(
@@ -95,6 +95,13 @@ async def get_product(session: AsyncSession, product_id: int):
     stmt = select(Product).where(Product.product_id == product_id)
     result: AsyncResult = await session.scalars(stmt)
     return result.first()
+
+
+async def get_the_cheapest_product_price(session: AsyncSession):
+    subquery = select(func.min(Product.product_price)).label("min_price")
+    stmt = select(Product.product_price).filter(Product.product_price == subquery).limit(1)
+    result: AsyncResult = await session.execute(stmt)
+    return result.scalar_one_or_none()
 
 
 async def get_product_by_name(session: AsyncSession, product_name: str):

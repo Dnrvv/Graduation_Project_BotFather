@@ -13,3 +13,18 @@ notify_users_approve_kb = InlineKeyboardMarkup(
         ]
     ]
 )
+
+choose_payment_method_cd = CallbackData("payment", "method")
+payment_methods_list = ["uzcard", "visa_usd", "cancel"]
+choose_payment_method_kb = InlineKeyboardMarkup(
+    row_width=2,
+    inline_keyboard=[
+        [
+            InlineKeyboardButton(text="Uzcard", callback_data=choose_payment_method_cd.new(method="uzcard")),
+            InlineKeyboardButton(text="Visa USD", callback_data=choose_payment_method_cd.new(method="visa_usd"))
+        ],
+        [
+            InlineKeyboardButton(text="❌Отмена", callback_data=choose_payment_method_cd.new(method="cancel"))
+        ]
+    ]
+)

@@ -7,7 +7,7 @@ from tgbot.infrastructure.database.db_models.user_models import Address
 from tgbot.services.service_functions import generate_random_id
 
 
-async def add_order(session: AsyncSession, cust_telegram_id: int, order_type: str, payment_type: str,
+async def add_order(session: AsyncSession, cust_telegram_id: int, order_type: str,
                     order_status: str):
     insert_stmt = select(
         Order
@@ -17,7 +17,6 @@ async def add_order(session: AsyncSession, cust_telegram_id: int, order_type: st
         ).values(
             cust_telegram_id=cust_telegram_id,
             order_type=order_type,
-            payment_type=payment_type,
             order_status=order_status
         ).returning(Order).on_conflict_do_nothing()
     )
@@ -25,7 +24,7 @@ async def add_order(session: AsyncSession, cust_telegram_id: int, order_type: st
     return result.first()
 
 
-async def add_order_product(session: AsyncSession, order_id: str, product_id: int, product_quantity: int):
+async def add_order_product(session: AsyncSession, order_id: int, product_id: int, product_quantity: int):
     insert_stmt = select(
         OrderProduct
     ).from_statement(

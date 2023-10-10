@@ -26,6 +26,9 @@ class DbConfig:
 @dataclass
 class TgBot:
     token: str
+    uzcard_provider_token: str
+    visa_provider_token: str
+    currency_api_key: str
     admin_ids: list[int]
     operator_ids: list[int]
     use_redis: bool
@@ -50,6 +53,9 @@ def load_config(path: str = None):
     return Config(
         tg_bot=TgBot(
             token=env.str("BOT_TOKEN"),
+            uzcard_provider_token=env.str("UZCARD_PROVIDER_TOKEN"),
+            visa_provider_token=env.str("VISA_PROVIDER_TOKEN"),
+            currency_api_key=env.str("CURRENCY_API_KEY"),
             admin_ids=list(map(int, env.list("ADMINS"))),
             operator_ids=list(map(int, env.list("OPERATORS"))),
             use_redis=env.bool("USE_REDIS"),

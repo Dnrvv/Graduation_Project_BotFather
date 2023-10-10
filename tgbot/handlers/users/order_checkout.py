@@ -6,13 +6,15 @@ from aiogram.dispatcher import FSMContext
 from aiogram.utils.exceptions import MessageToDeleteNotFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from tgbot.infrastructure.database.db_functions import product_functions, order_functions, user_functions
+from tgbot.config import load_config
+from tgbot.infrastructure.database.db_functions import order_functions, user_functions
 from tgbot.infrastructure.database.db_models.user_models import User
 from tgbot.keyboards.menu_inline_kbs import categories_keyboard, cart_actions_cd
-from tgbot.keyboards.reply_kbs import get_contact_kb, payment_type_kb, order_approve_kb, main_menu_kb, reply_cancel_kb
+from tgbot.keyboards.reply_kbs import get_contact_kb, order_approve_kb, main_menu_kb, reply_cancel_kb
 from tgbot.middlewares.throttling import rate_limit
 from tgbot.misc.states import Order
-from tgbot.services.service_functions import number_to_emoji, format_number_with_spaces, calc_delivery_time
+
+from tgbot.services.text_formatting_functions import create_order_checkout_text
 
 
 @rate_limit(1)
@@ -33,9 +35,7 @@ async def cart_actions(call: types.CallbackQuery, callback_data: dict, state: FS
         await call.answer()
         await call.message.edit_reply_markup()
 
-        text = ("Отправьте или введите ваш номер телефона в формате: <b>+998 ** *** ** **</b>\n\n" 
-                "<i><b>Примечание:</b> если Вы планируете оплатить заказ онлайн с помощью Click или Payme, то "
-                "пожалуйста, укажите номер телефона, на который зарегистрирован аккаунт в соответствующем сервисе.</i>")
+        text = "Отправьте или введите ваш номер телефона в формате: <b>+998 ** *** ** **</b>"
 
         phone_request_msg = await call.message.answer(text=text, reply_markup=get_contact_kb)
         await state.update_data(phone_request_msg_id=phone_request_msg.message_id)
@@ -54,14 +54,13 @@ async def cart_actions(call: types.CallbackQuery, callback_data: dict, state: FS
 
 @rate_limit(1)
 async def get_contact(message: types.Message, state: FSMContext, session: AsyncSession):
+    phone_number = ""
     if message.contact:
         phone_number = message.contact.phone_number
         if "+" not in phone_number:
             phone_number = f"+{phone_number}"
         await state.update_data(phone_number=phone_number)
-        await message.answer("💸 Выберите тип оплаты:", reply_markup=payment_type_kb)
-        await Order.GetPaymentType.set()
-        return
+
     elif message.text == "⬅️ Назад":
         async with state.proxy() as data:
             top_msg_id = data.get("top_msg_id")
@@ -83,52 +82,29 @@ async def get_contact(message: types.Message, state: FSMContext, session: AsyncS
         await Order.Menu.set()
         return
 
-    pattern = r'^\+? ?998 ?\d{2} ?\d{3} ?\d{2} ?\d{2}$'
-    match = re.match(pattern, message.text)
-    if match:
-        phone_number = message.text.replace(" ", "")
-        await state.update_data(phone_number=phone_number)
-        await message.answer("💸 Выберите тип оплаты:", reply_markup=payment_type_kb)
-        await Order.GetPaymentType.set()
     else:
-        await message.answer("Пожалуйста, следуйте формату: <b>+998 ** *** ** **</b>")
+        pattern = r'^\+? ?998 ?\d{2} ?\d{3} ?\d{2} ?\d{2}$'
+        match = re.match(pattern, message.text)
+        if match:
+            phone_number = message.text.replace(" ", "")
+            await state.update_data(phone_number=phone_number)
+        else:
+            await message.answer("Пожалуйста, следуйте формату: <b>+998 ** *** ** **</b>")
 
-
-@rate_limit(1)
-async def get_payment_type(message: types.Message, state: FSMContext, session: AsyncSession):
-    if message.text not in ["Наличные", "Click", "Payme"]:
-        await message.answer("Некорректный ввод. Используйте кнопки ниже:", reply_markup=payment_type_kb)
-        return
-
-    await state.update_data(payment_type=message.text)
-
+    # тут нужно уже вывести заказ для подтверждения пользователем
     async with state.proxy() as data:
         delivery_cost = data.get("delivery_cost")
         address = data.get("address")
-        phone_number = data.get("phone_number")
         selected_products = data.get("selected_products", {})
         total_products_cost = data.get("total_products_cost")
 
-    order_checkout_text = (f"<b>Ваш заказ:</b>\n"
-                           f"Адрес: {address}\n"
-                           f"Номер телефона: {phone_number}\n\n")
+    order_checkout_text = await create_order_checkout_text(address=address, phone_number=phone_number,
+                                                           selected_products=selected_products,
+                                                           total_products_cost=total_products_cost,
+                                                           delivery_cost=delivery_cost,
+                                                           session=session, is_approved=False)
 
-    for product_id, quantity in selected_products.items():
-        product_obj = await product_functions.get_product(session, product_id=int(product_id))
-        cart_product_cost = quantity * product_obj.product_price
-
-        order_checkout_text += f"<b>{product_obj.product_name}</b>\n"
-        order_checkout_text += (f"<b> {number_to_emoji(quantity)}</b> ✖️ "
-                                f"{format_number_with_spaces(product_obj.product_price)} "
-                                f"= {format_number_with_spaces(cart_product_cost)} сум \n")
-
-    order_checkout_text += (f"\nТип оплаты: {message.text}\n"
-                            f"\n<b>Продукты:</b> {format_number_with_spaces(total_products_cost)} сум\n"
-                            f"<b>Доставка:</b> {format_number_with_spaces(delivery_cost)} сум\n"
-                            f"<b>Итого: {format_number_with_spaces(total_products_cost + delivery_cost)} сум</b>\n\n"
-                            f"<b>Подтвердить заказ?</b>")
-
-    await message.answer(text=order_checkout_text, reply_markup=order_approve_kb)
+    await message.answer(text=order_checkout_text)
     await Order.OrderApprove.set()
 
 
@@ -144,12 +120,10 @@ async def approve_order(message: types.Message, state: FSMContext, session: Asyn
             phone_number = data.get("phone_number")
             selected_products = data.get("selected_products", {})
             total_products_cost = data.get("total_products_cost")
-            payment_type = data.get("payment_type")
 
         # -------------------- Обращение к базе данных ------------------------
         order_obj = await order_functions.add_order(session, cust_telegram_id=message.from_user.id,
-                                                    order_type=order_type, payment_type=payment_type,
-                                                    order_status="Новый")
+                                                    order_type=order_type, order_status="Новый")
 
         customer_addresses = await user_functions.get_user_addresses(session, cust_telegram_id=message.from_user.id)
         if address not in customer_addresses:
@@ -164,33 +138,22 @@ async def approve_order(message: types.Message, state: FSMContext, session: Asyn
                                            delivery_cost=delivery_cost)
 
         await user_functions.update_user(session, User.telegram_id == message.from_user.id, phone_number=phone_number)
+        user_obj = await user_functions.get_user(session, telegram_id=message.from_user.id)
+        await user_functions.update_user(session, User.telegram_id == message.from_user.id,
+                                         balance=user_obj.balance - (total_products_cost + delivery_cost))
 
-        # ---------------------------------------------------------
+        # --------------------------------------------------------------------
 
-        order_info_text = (f"Номер заказа: <b>{order_obj.order_id}</b>\n"
-                           f"Адрес: {address}\n\n")
-
-        for product_id, quantity in selected_products.items():
-            product_obj = await product_functions.get_product(session, product_id=int(product_id))
-            order_info_text += f"<b>{product_obj.product_name}</b>\n"
-            cart_product_cost = quantity * product_obj.product_price
-            order_info_text += (f"<b> {number_to_emoji(quantity)}</b> ✖️ "
-                                f"{format_number_with_spaces(product_obj.product_price)} "
-                                f"= {format_number_with_spaces(cart_product_cost)} сум \n")
-            await order_functions.add_order_product(session, order_id=order_obj.order_id,
-                                                    product_id=product_obj.product_id,
-                                                    product_quantity=quantity)
-
+        order_checkout_text = await create_order_checkout_text(address=address, phone_number=phone_number,
+                                                               selected_products=selected_products,
+                                                               total_products_cost=total_products_cost,
+                                                               delivery_cost=delivery_cost,
+                                                               session=session, is_approved=True,
+                                                               order_id=order_obj.order_id,
+                                                               latitude=latitude, longitude=longitude)
         await session.commit()
 
-        order_info_text += (f"\nТип оплаты: {payment_type}\n"
-                            f"\n<b>Продукты:</b> {format_number_with_spaces(total_products_cost)} сум\n"
-                            f"<b>Доставка:</b> {format_number_with_spaces(delivery_cost)} сум\n"
-                            f"<b>Итого: {format_number_with_spaces(total_products_cost + delivery_cost)} сум</b>\n\n"
-                            f"<b>Ваш заказ оформлен.</b>\n"
-                            f"Время доставки - <b>{calc_delivery_time(latitude, longitude)}</b> минут.")
-
-        await message.answer(text=order_info_text, reply_markup=main_menu_kb)
+        await message.answer(text=order_checkout_text, reply_markup=main_menu_kb)
 
     elif message.text == "❌ Отменить":
         await message.answer("😔 Заказ отменён.", reply_markup=main_menu_kb)
@@ -207,5 +170,4 @@ def register_order_checkout(dp: Dispatcher):
     dp.register_callback_query_handler(cart_actions, cart_actions_cd.filter(), state=Order.Menu)
     dp.register_message_handler(get_contact, content_types=[types.ContentType.TEXT, types.ContentType.CONTACT],
                                 state=Order.GetContact)
-    dp.register_message_handler(get_payment_type, content_types=types.ContentType.TEXT, state=Order.GetPaymentType)
     dp.register_message_handler(approve_order, content_types=types.ContentType.TEXT, state=Order.OrderApprove)

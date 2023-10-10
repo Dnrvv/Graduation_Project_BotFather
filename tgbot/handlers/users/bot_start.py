@@ -12,9 +12,9 @@ from tgbot.infrastructure.database.db_functions import user_functions
 from tgbot.infrastructure.database.db_models.user_models import User
 from tgbot.keyboards.reply_kbs import main_menu_kb
 from tgbot.middlewares.throttling import rate_limit
-from tgbot.misc.dependences import SUPPORT_USERNAME, BOT_USERNAME, CHANNEL_USERNAME
+from tgbot.misc.dependences import BOT_USERNAME
 from tgbot.services.broadcast_functions import send_text
-from tgbot.services.service_functions import is_subscribed, format_number_with_spaces
+from tgbot.services.service_functions import format_number_with_spaces
 
 
 @rate_limit(1)

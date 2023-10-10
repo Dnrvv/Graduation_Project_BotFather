@@ -14,7 +14,7 @@ from tgbot.keyboards.reply_kbs import location_methods_kb, main_menu_kb, order_t
 from tgbot.middlewares.throttling import rate_limit
 from tgbot.misc.dependences import KM_DELIVERY_PRICE
 from tgbot.misc.states import Order
-from tgbot.services.address_request import get_address
+from tgbot.services.request_functions import get_address
 from tgbot.services.broadcast_functions import broadcast
 from tgbot.services.service_functions import calc_delivery_cost
 

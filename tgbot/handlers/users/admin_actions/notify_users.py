@@ -5,7 +5,6 @@ from aiogram.utils.markdown import quote_html
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tgbot.infrastructure.database.db_functions import user_functions
-from tgbot.infrastructure.database.db_functions.settings_functions import update_active_users_count
 from tgbot.keyboards.inline_kbs import notify_users_approve_kb, notify_users_approve_callback, notify_users_approves
 from tgbot.keyboards.reply_kbs import main_menu_kb
 from tgbot.middlewares.throttling import rate_limit
@@ -150,9 +149,6 @@ async def notify_approve(call: types.CallbackQuery, callback_data: dict, state: 
             finally:
                 await call.message.answer(f"📬 Успешно отправлено сообщений: {counter}")
                 logging.info(f"Successfully sent messages: {counter}")
-
-        await update_active_users_count(session=session, count=counter)
-        await session.commit()
 
     elif approve == "cancel":
         await call.bot.edit_message_text(chat_id=call.from_user.id, message_id=call.message.message_id,

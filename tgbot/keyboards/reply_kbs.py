@@ -8,9 +8,12 @@ main_menu_kb = ReplyKeyboardMarkup(
             KeyboardButton(text="🛒 Сделать заказ")
         ],
         [
-            KeyboardButton(text="✍️ Оставить отзыв"),
+            KeyboardButton(text="💳 Пополнить баланс"),
             KeyboardButton(text="🛍 Мои заказы")
         ],
+        [
+            KeyboardButton(text="✍️ Оставить отзыв")
+        ]
     ]
 )
 
@@ -60,20 +63,6 @@ get_contact_kb = ReplyKeyboardMarkup(
         ]
     ]
 )
-
-payment_type_kb = ReplyKeyboardMarkup(
-    resize_keyboard=True,
-    keyboard=[
-        [
-            KeyboardButton(text="Наличные"),
-        ],
-        [
-            KeyboardButton(text="Click"),
-            KeyboardButton(text="Payme")
-        ]
-    ]
-)
-
 
 order_approve_kb = ReplyKeyboardMarkup(
     resize_keyboard=True,

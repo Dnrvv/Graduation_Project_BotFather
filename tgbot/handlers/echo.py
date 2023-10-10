@@ -1,8 +1,8 @@
 from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 
-from tgbot.keyboards.reply_kbs import main_menu_kb, order_type_kb, reply_approve_kb, get_contact_kb, payment_type_kb, \
-    reply_cancel_kb
+from tgbot.keyboards.reply_kbs import main_menu_kb, order_type_kb, reply_approve_kb, get_contact_kb, \
+    reply_cancel_kb, order_approve_kb
 from tgbot.middlewares.throttling import rate_limit
 
 
@@ -26,10 +26,8 @@ async def bot_echo_all(message: types.Message, state: FSMContext):
         elif "GetContact" in state_name:
             await message.answer("Используйте кнопки ниже, либо отправьте номер телефона в формате "
                                  "<b>+998 ** *** ** **</b>.", reply_markup=get_contact_kb)
-        elif "GetPaymentType" in state_name:
-            await message.answer("Используйте кнопки ниже:", reply_markup=payment_type_kb)
         elif "ApproveOrder" in state_name:
-            await message.answer("Используйте кнопки ниже:", reply_markup=payment_type_kb)
+            await message.answer("Используйте кнопки ниже:", reply_markup=order_approve_kb)
     elif "Feedback" in state_name:
         await message.answer("Пожалуйста, отправьте текст.", reply_markup=reply_cancel_kb)
 

@@ -2,20 +2,35 @@ from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from tgbot.infrastructure.database.db_functions import order_functions
+from tgbot.infrastructure.database.db_functions import order_functions, user_functions, product_functions
 from tgbot.infrastructure.database.db_functions.user_functions import add_user_feedback
+from tgbot.keyboards.inline_kbs import choose_payment_method_kb
 from tgbot.keyboards.pagination_kbs import user_orders_kb, orders_pagination_call_cd
 from tgbot.keyboards.reply_kbs import order_type_kb, main_menu_kb, reply_cancel_kb
 from tgbot.middlewares.throttling import rate_limit
-from tgbot.misc.states import Order, Feedback
-from tgbot.services.text_formatting_functions import create_order_text
+from tgbot.misc.states import Order, Feedback, ReplenishBalance
+from tgbot.services.request_functions import get_currency_exchange_rate
+from tgbot.services.text_formatting_functions import create_order_history_text
 
 
 @rate_limit(1)
-async def make_order(message: types.Message, state: FSMContext):
+async def make_order(message: types.Message, state: FSMContext, session: AsyncSession):
     await state.reset_data()
+    user_obj = await user_functions.get_user(session, telegram_id=message.from_user.id)
+    if user_obj.balance < await product_functions.get_the_cheapest_product_price(session):
+        await message.answer("😔 На Вашем балансе недостаточно средств.")
+        return
     await message.answer("Выберите тип заказа:", reply_markup=order_type_kb)
     await Order.GetOrderType.set()
+
+
+@rate_limit(1)
+async def replenish_balance(message: types.Message):
+    text = ("Выберите метод оплаты:\n\n"
+            "ℹ️ <i>Примечание: при выборе сторонних валют (например <b>USD</b>), после оплаты произойдёт конвертация "
+            "по текущему курсу ЦБ РУз.</i>")
+    await message.answer(text=text, reply_markup=choose_payment_method_kb)
+    await ReplenishBalance.GetPaymentMethod.set()
 
 
 @rate_limit(1)
@@ -33,7 +48,7 @@ async def user_orders(message: types.Message, session: AsyncSession):
         return
     order_obj = await order_functions.get_user_order_pagination(session, cust_telegram_id=message.from_user.id,
                                                                 counter=1)
-    text = await create_order_text(order_obj, session)
+    text = await create_order_history_text(order_obj, session)
     await message.answer(text=text, reply_markup=user_orders_kb(orders_count=orders_count))
 
 
@@ -41,7 +56,7 @@ async def show_chosen_page(call: types.CallbackQuery, callback_data: dict, sessi
     current_page = callback_data.get("page")
     if current_page == "cancel":
         await call.answer()
-        await call.message.edit_text("😋 Ням-ням.")
+        await call.message.edit_text("😋 Ням-ням!")
         return
     elif current_page == "begin_empty":
         await call.answer("Вы в самом начале списка!", show_alert=False)
@@ -54,7 +69,7 @@ async def show_chosen_page(call: types.CallbackQuery, callback_data: dict, sessi
     order_obj = await order_functions.get_user_order_pagination(session, cust_telegram_id=call.from_user.id,
                                                                 counter=int(current_page))
 
-    text = await create_order_text(order_obj, session)
+    text = await create_order_history_text(order_obj, session)
     keyboard = user_orders_kb(orders_count=orders_count, page=int(current_page))
     await call.message.edit_text(text=text, reply_markup=keyboard)
 
@@ -74,9 +89,11 @@ async def save_feedback(message: types.Message, state: FSMContext, session: Asyn
 def register_main_menu(dp: Dispatcher):
     dp.register_message_handler(make_order, text=["🛒 Сделать заказ", "/order"], state="*")
 
-    dp.register_message_handler(feedback, text=["✍️ Оставить отзыв", "/feedback"], state="*")
-    dp.register_message_handler(save_feedback, content_types=types.ContentType.TEXT,
-                                state=Feedback.GetFeedbackText)
+    dp.register_message_handler(replenish_balance, text="💳 Пополнить баланс", state="*")
 
     dp.register_message_handler(user_orders, text="🛍 Мои заказы", state="*")
     dp.register_callback_query_handler(show_chosen_page, orders_pagination_call_cd.filter(), state="*")
+
+    dp.register_message_handler(feedback, text=["✍️ Оставить отзыв", "/feedback"], state="*")
+    dp.register_message_handler(save_feedback, content_types=types.ContentType.TEXT,
+                                state=Feedback.GetFeedbackText)

@@ -6,8 +6,7 @@ class Order(DatabaseModel, TimeStampMixin):
     order_id = Column(BIGINT, nullable=False, autoincrement=True, primary_key=True)
     cust_telegram_id = Column(BIGINT, nullable=False, autoincrement=False)
     order_type = Column(VARCHAR(20), nullable=False)
-    payment_type = Column(VARCHAR(20), nullable=False, default="cash")
-    order_status = Column(VARCHAR(20), nullable=False, default="not delivered (?)")
+    order_status = Column(VARCHAR(20), nullable=False, default="Новый")
 
 
 class OrderProduct(DatabaseModel):
