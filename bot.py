@@ -78,10 +78,10 @@ async def on_startup(session_pool, bot: Bot, scheduler: AsyncIOScheduler, config
 
     await assign_service_roles(session, bot, config.tg_bot.admin_ids, config.tg_bot.operator_ids)
 
-    scheduler_id = generate_random_id(10)
+    # scheduler_id = generate_random_id(10)
     # ПОСТАВИТЬ hours = 6
-    scheduler.add_job(update_currencies, 'interval', seconds=10, replace_existing=True, id=scheduler_id,
-                      args=(session,))
+    # scheduler.add_job(update_currencies, 'interval', seconds=10, replace_existing=True, id=scheduler_id,
+    #                   args=(session,))
     await session.close()
 
 
@@ -109,7 +109,6 @@ async def main():
 
     register_all_filters(dp)
     register_all_handlers(dp)
-
 
     await set_bot_commands(dp, config=config)
     await on_startup(session_pool, bot, scheduler, config)

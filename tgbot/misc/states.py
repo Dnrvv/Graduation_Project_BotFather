@@ -17,7 +17,6 @@ class Feedback(StatesGroup):
 
 
 class Order(StatesGroup):
-    GetOrderType = State()
     GetLocation = State()
     ApproveLocation = State()
     Menu = State()

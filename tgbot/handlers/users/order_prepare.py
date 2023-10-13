@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from tgbot.config import load_config
 from tgbot.handlers.users.order_menu import list_categories
 from tgbot.infrastructure.database.db_functions import user_functions
-from tgbot.keyboards.reply_kbs import location_methods_kb, main_menu_kb, order_type_kb, saved_locations_kb, \
+from tgbot.keyboards.reply_kbs import location_methods_kb, main_menu_kb, saved_locations_kb, \
     reply_approve_kb, reply_cancel_kb
 from tgbot.middlewares.throttling import rate_limit
 from tgbot.misc.dependences import KM_DELIVERY_PRICE
@@ -17,33 +17,6 @@ from tgbot.misc.states import Order
 from tgbot.services.request_functions import get_address
 from tgbot.services.broadcast_functions import broadcast
 from tgbot.services.service_functions import calc_delivery_cost
-
-
-@rate_limit(1)
-async def get_order_type(message: types.Message, state: FSMContext, session: AsyncSession):
-    if message.text == "🛵 Доставка":
-        await state.update_data(order_type="delivery")
-
-        flag = await user_functions.check_user_addresses(session, cust_telegram_id=message.from_user.id)
-        if flag:
-            await message.answer("📍 Отправьте геопозицию или выберите адрес из сохранённых:",
-                                 reply_markup=location_methods_kb(has_addresses=flag))
-        else:
-            await message.answer("📍 Отправьте геопозицию:", reply_markup=location_methods_kb(has_addresses=flag))
-        await Order.GetLocation.set()
-
-    elif message.text == "🚶 Самовывоз":
-        await state.update_data(order_type="pickup")
-
-        await message.answer("Вы выбрали самовывоз... Пока это в разработке...")
-
-    elif message.text == "❌ Отмена":
-        await message.answer("❌ Заказ отменён.", reply_markup=main_menu_kb)
-        await state.reset_data()
-        await state.finish()
-
-    else:
-        await message.answer("Некорректный ввод. Используйте кнопки ниже:", reply_markup=order_type_kb)
 
 
 @rate_limit(1)
@@ -133,7 +106,7 @@ async def approve_delivery_location(message: types.Message, state: FSMContext, s
         delivery_cost = calc_delivery_cost(cust_latitude=latitude, cust_longitude=longitude, km_price=KM_DELIVERY_PRICE)
 
         # Точка входа в меню кафе
-        top_msg = await message.answer("Выберите категорию: (Тут уже будет меню...)", reply_markup=reply_cancel_kb)
+        top_msg = await message.answer("❣️ Закажем вкусняшек.", reply_markup=reply_cancel_kb)
         await state.update_data(delivery_cost=delivery_cost, top_msg_id=top_msg.message_id, selected_products={})
         await list_categories(message, state, session)
         await Order.Menu.set()
@@ -177,8 +150,7 @@ async def cancel_order(message: types.Message, state: FSMContext):
 
 def register_order_prepare(dp: Dispatcher):
     dp.register_message_handler(cancel_order, text="❌ Отмена",
-                                state=[Order.GetOrderType, Order.GetLocation, Order.ApproveLocation, Order.Menu])
-    dp.register_message_handler(get_order_type, content_types=types.ContentType.TEXT, state=Order.GetOrderType)
+                                state=[Order.GetLocation, Order.ApproveLocation, Order.Menu])
     dp.register_message_handler(choose_saved_delivery_location, text="🗺 Мои адреса", state=Order.GetLocation)
     dp.register_message_handler(get_delivery_location, content_types=[types.ContentType.LOCATION,
                                                                       types.ContentType.TEXT], state=Order.GetLocation)

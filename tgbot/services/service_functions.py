@@ -22,7 +22,7 @@ def generate_random_id(length: int) -> str:
     """
 
     symbols = string.ascii_lowercase + string.ascii_uppercase + string.digits
-    return ''.join(random.choice(symbols) for i in range(length))
+    return ''.join(random.choice(symbols) for _ in range(length))
 
 
 def show_on_gmaps(lat, lon) -> str:

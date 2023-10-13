@@ -126,6 +126,17 @@ async def show_item_via_inline_query(message: types.Message, state: FSMContext, 
     if not product_obj:
         await message.answer("Ошибка. Такого товара нет.")
         return
+    async with state.proxy() as data:
+        menu_msg_id = data.get("menu_msg_id")
+        ph_msg_id = data.get("ph_msg_id")
+
+    if menu_msg_id:
+        await message.bot.delete_message(chat_id=message.from_user.id, message_id=menu_msg_id)
+        await state.update_data(menu_msg_id=None)
+    if ph_msg_id:
+        await message.bot.delete_message(chat_id=message.from_user.id, message_id=ph_msg_id)
+        await state.update_data(ph_msg_id=None)
+
     await show_item(message, category=product_obj.category_code, product_id=product_obj.product_id,
                     state=state, session=session)
 

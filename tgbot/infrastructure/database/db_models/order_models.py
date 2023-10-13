@@ -1,11 +1,10 @@
-from sqlalchemy import Column, VARCHAR, BIGINT, Integer, FLOAT, BOOLEAN
+from sqlalchemy import Column, VARCHAR, BIGINT, Integer, BOOLEAN
 from tgbot.infrastructure.database.db_models.base_model import TimeStampMixin, DatabaseModel
 
 
 class Order(DatabaseModel, TimeStampMixin):
     order_id = Column(BIGINT, nullable=False, autoincrement=True, primary_key=True)
     cust_telegram_id = Column(BIGINT, nullable=False, autoincrement=False)
-    order_type = Column(VARCHAR(20), nullable=False)
     order_status = Column(VARCHAR(20), nullable=False, default="Новый")
 
 
@@ -34,7 +33,10 @@ class Product(DatabaseModel):
 class Delivery(DatabaseModel):
     delivery_id = Column(VARCHAR(20), nullable=False, autoincrement=False, primary_key=True)
     delivery_address_id = Column(VARCHAR(30), nullable=False, autoincrement=False)
+
     order_id = Column(BIGINT, nullable=False)
+
     delivery_cost = Column(Integer, nullable=False, default=0)
+    
     courier_name = Column(VARCHAR(100), nullable=True)
     courier_phone = Column(VARCHAR(25), nullable=True)

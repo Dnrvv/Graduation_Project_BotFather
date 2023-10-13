@@ -1,4 +1,3 @@
-from aiogram.types import LabeledPrice
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tgbot.infrastructure.database.db_functions import order_functions, product_functions

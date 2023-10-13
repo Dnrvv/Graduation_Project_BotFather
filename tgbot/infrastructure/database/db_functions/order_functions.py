@@ -1,14 +1,13 @@
-from sqlalchemy import select, update, func, delete
+from sqlalchemy import select, func
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncResult, AsyncSession
 
-from tgbot.infrastructure.database.db_models.order_models import Order, OrderProduct, Product, Delivery
+from tgbot.infrastructure.database.db_models.order_models import Order, OrderProduct, Delivery
 from tgbot.infrastructure.database.db_models.user_models import Address
 from tgbot.services.service_functions import generate_random_id
 
 
-async def add_order(session: AsyncSession, cust_telegram_id: int, order_type: str,
-                    order_status: str):
+async def add_order(session: AsyncSession, cust_telegram_id: int, order_status: str):
     insert_stmt = select(
         Order
     ).from_statement(
@@ -16,7 +15,6 @@ async def add_order(session: AsyncSession, cust_telegram_id: int, order_type: st
             Order
         ).values(
             cust_telegram_id=cust_telegram_id,
-            order_type=order_type,
             order_status=order_status
         ).returning(Order).on_conflict_do_nothing()
     )

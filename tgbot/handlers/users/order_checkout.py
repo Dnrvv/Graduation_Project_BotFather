@@ -6,7 +6,6 @@ from aiogram.dispatcher import FSMContext
 from aiogram.utils.exceptions import MessageToDeleteNotFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from tgbot.config import load_config
 from tgbot.infrastructure.database.db_functions import order_functions, user_functions
 from tgbot.infrastructure.database.db_models.user_models import User
 from tgbot.keyboards.menu_inline_kbs import categories_keyboard, cart_actions_cd
@@ -42,11 +41,11 @@ async def cart_actions(call: types.CallbackQuery, callback_data: dict, state: FS
         await Order.GetContact.set()
         return
     elif action == "clear_cart":
-        await call.answer()
+        await call.answer("🧹 Корзина очищена", show_alert=False)
         async with state.proxy() as data:
             data["selected_products"] = {}
 
-        await call.message.edit_text("🧹 Корзина очищена")
+        await call.message.delete()
         keyboard = await categories_keyboard(session=session)
         menu_msg = await call.message.answer("🍴 Выберите категорию:", reply_markup=keyboard)
         await state.update_data(ph_msg_id=None, menu_msg_id=menu_msg.message_id, quantity_counter=1)
@@ -104,7 +103,7 @@ async def get_contact(message: types.Message, state: FSMContext, session: AsyncS
                                                            delivery_cost=delivery_cost,
                                                            session=session, is_approved=False)
 
-    await message.answer(text=order_checkout_text)
+    await message.answer(text=order_checkout_text, reply_markup=order_approve_kb)
     await Order.OrderApprove.set()
 
 
@@ -112,7 +111,6 @@ async def get_contact(message: types.Message, state: FSMContext, session: AsyncS
 async def approve_order(message: types.Message, state: FSMContext, session: AsyncSession):
     if message.text == "✅ Подтвердить":
         async with state.proxy() as data:
-            order_type = data.get("order_type")
             delivery_cost = data.get("delivery_cost")
             latitude = float(data.get("latitude"))
             longitude = float(data.get("longitude"))
@@ -123,7 +121,7 @@ async def approve_order(message: types.Message, state: FSMContext, session: Asyn
 
         # -------------------- Обращение к базе данных ------------------------
         order_obj = await order_functions.add_order(session, cust_telegram_id=message.from_user.id,
-                                                    order_type=order_type, order_status="Новый")
+                                                    order_status="Новый")
 
         customer_addresses = await user_functions.get_user_addresses(session, cust_telegram_id=message.from_user.id)
         if address not in customer_addresses:

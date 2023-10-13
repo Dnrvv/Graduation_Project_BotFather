@@ -6,7 +6,7 @@ from tgbot.infrastructure.database.db_functions import order_functions, user_fun
 from tgbot.infrastructure.database.db_functions.user_functions import add_user_feedback
 from tgbot.keyboards.inline_kbs import choose_payment_method_kb
 from tgbot.keyboards.pagination_kbs import user_orders_kb, orders_pagination_call_cd
-from tgbot.keyboards.reply_kbs import order_type_kb, main_menu_kb, reply_cancel_kb
+from tgbot.keyboards.reply_kbs import order_type_kb, main_menu_kb, reply_cancel_kb, location_methods_kb
 from tgbot.middlewares.throttling import rate_limit
 from tgbot.misc.states import Order, Feedback, ReplenishBalance
 from tgbot.services.request_functions import get_currency_exchange_rate
@@ -20,8 +20,14 @@ async def make_order(message: types.Message, state: FSMContext, session: AsyncSe
     if user_obj.balance < await product_functions.get_the_cheapest_product_price(session):
         await message.answer("😔 На Вашем балансе недостаточно средств.")
         return
-    await message.answer("Выберите тип заказа:", reply_markup=order_type_kb)
-    await Order.GetOrderType.set()
+
+    flag = await user_functions.check_user_addresses(session, cust_telegram_id=message.from_user.id)
+    if flag:
+        await message.answer("📍 Отправьте геопозицию или выберите адрес из сохранённых:",
+                             reply_markup=location_methods_kb(has_addresses=flag))
+    else:
+        await message.answer("📍 Отправьте геопозицию:", reply_markup=location_methods_kb(has_addresses=flag))
+    await Order.GetLocation.set()
 
 
 @rate_limit(1)
