@@ -32,9 +32,13 @@ async def get_payment_method(call: types.CallbackQuery, callback_data: dict, sta
         currency = "USD"
 
     await state.update_data(currency=currency)
-    currency_obj = await currency_functions.get_currency(session, currency_code=currency)
-    text = (f"Введите сумму пополнения ({currency}):\n\n"
-            f"<b>1 {currency} = {int(currency_obj.course_to_uzs)} сум</b>")
+    try:
+        currency_obj = await currency_functions.get_currency(session, currency_code=currency)
+        text = (f"Введите сумму пополнения ({currency}):\n\n"
+                f"<b>1 {currency} = {int(currency_obj.course_to_uzs)} сум</b>")
+    except AttributeError as err:
+        logging.error(err)
+        text = "Введите сумму пополнения:"
     await call.message.answer(text=text, reply_markup=reply_cancel_kb)
     await ReplenishBalance.GetReplenishAmount.set()
 

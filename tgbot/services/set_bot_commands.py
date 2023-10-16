@@ -16,6 +16,7 @@ async def set_bot_commands(dp, config: Config):
         "start": "Перезапустить бота",
         "notify_users": "Уведомить пользователей",
         "statistics": "Статистика бота",
+        "show_feedbacks": "Отзывы",
         "moderation_menu": "Меню модерации",
         "my_balance": "Мой баланс",
         "my_referer_link": "Ссылка для приглашения"

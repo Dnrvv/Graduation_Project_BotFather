@@ -26,6 +26,7 @@ class Order(StatesGroup):
 
 class AdminActions(StatesGroup):
     GetTOUFile = State()
+    FeedbacksChecking = State()
 
 
 class ModerationActions(StatesGroup):

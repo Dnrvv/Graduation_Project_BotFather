@@ -3,7 +3,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncResult, AsyncSession
 
 from tgbot.infrastructure.database.db_models.order_models import Order
-from tgbot.infrastructure.database.db_models.user_models import User, Address, Feedback
+from tgbot.infrastructure.database.db_models.user_models import User, Address
 from tgbot.services.service_functions import generate_random_id
 
 
@@ -39,22 +39,6 @@ async def add_user_address(session: AsyncSession, cust_telegram_id: int, latitud
         ).returning(Address).on_conflict_do_nothing()
     )
 
-    result = await session.scalars(insert_stmt)
-    return result.first()
-
-
-async def add_user_feedback(session: AsyncSession, cust_telegram_id: int, feedback_text: str):
-    insert_stmt = select(
-        Feedback
-    ).from_statement(
-        insert(
-            Feedback
-        ).values(
-            feedback_id=generate_random_id(15),
-            cust_telegram_id=cust_telegram_id,
-            feedback_text=feedback_text
-        ).returning(Feedback).on_conflict_do_nothing()
-    )
     result = await session.scalars(insert_stmt)
     return result.first()
 

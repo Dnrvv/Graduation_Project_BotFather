@@ -99,7 +99,7 @@ async def main():
     scheduler = AsyncIOScheduler()
     bot['config'] = config
 
-    session_pool = await create_session_pool(config.db, drop_tables=True, echo=True)
+    session_pool = await create_session_pool(config.db, drop_tables=False, echo=True)
     register_all_middlewares(
         dp,
         session_pool=session_pool,

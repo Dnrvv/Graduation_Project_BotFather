@@ -20,7 +20,3 @@ class Address(DatabaseModel):
     address = Column(VARCHAR(200), nullable=False)
 
 
-class Feedback(DatabaseModel):
-    feedback_id = Column(VARCHAR(15), primary_key=True)
-    cust_telegram_id = Column(BIGINT, nullable=False, autoincrement=False)
-    feedback_text = Column(VARCHAR(450), nullable=False)

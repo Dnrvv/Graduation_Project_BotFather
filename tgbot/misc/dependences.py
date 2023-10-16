@@ -1,6 +1,7 @@
 
 SUPPORT_USERNAME = "@dnrvv"
 
+MAX_FEEDBACK_LENGTH = 600
 ALLOWED_CITIES = ["Tashkent", "Ташкент", "Kyiv", "Киев"]
 
 CATEGORY_CODE_LENGTH = 20

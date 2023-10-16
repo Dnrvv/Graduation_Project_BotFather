@@ -3,13 +3,13 @@ from aiogram.dispatcher import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tgbot.infrastructure.database.db_functions import order_functions, user_functions, product_functions
-from tgbot.infrastructure.database.db_functions.user_functions import add_user_feedback
+from tgbot.infrastructure.database.db_functions.feedback_functions import add_feedback
 from tgbot.keyboards.inline_kbs import choose_payment_method_kb
 from tgbot.keyboards.pagination_kbs import user_orders_kb, orders_pagination_call_cd
-from tgbot.keyboards.reply_kbs import order_type_kb, main_menu_kb, reply_cancel_kb, location_methods_kb
+from tgbot.keyboards.reply_kbs import main_menu_kb, reply_cancel_kb, location_methods_kb
 from tgbot.middlewares.throttling import rate_limit
+from tgbot.misc.dependences import MAX_FEEDBACK_LENGTH
 from tgbot.misc.states import Order, Feedback, ReplenishBalance
-from tgbot.services.request_functions import get_currency_exchange_rate
 from tgbot.services.text_formatting_functions import create_order_history_text
 
 
@@ -37,13 +37,6 @@ async def replenish_balance(message: types.Message):
             "по текущему курсу ЦБ РУз.</i>")
     await message.answer(text=text, reply_markup=choose_payment_method_kb)
     await ReplenishBalance.GetPaymentMethod.set()
-
-
-@rate_limit(1)
-async def feedback(message: types.Message, state: FSMContext):
-    await message.answer("📨 Мы будем рады, если Вы оставите отзыв:", reply_markup=reply_cancel_kb)
-    await state.reset_data()
-    await Feedback.GetFeedbackText.set()
 
 
 @rate_limit(1)
@@ -81,11 +74,22 @@ async def show_chosen_page(call: types.CallbackQuery, callback_data: dict, sessi
 
 
 @rate_limit(1)
+async def feedback(message: types.Message, state: FSMContext):
+    await message.answer("📨 Мы будем рады, если Вы оставите отзыв:", reply_markup=reply_cancel_kb)
+    await state.reset_data()
+    await Feedback.GetFeedbackText.set()
+
+
+@rate_limit(1)
 async def save_feedback(message: types.Message, state: FSMContext, session: AsyncSession):
     if message.text == "❌ Отмена":
         await message.answer("Действие отменено.", reply_markup=main_menu_kb)
+    elif len(message.text) > MAX_FEEDBACK_LENGTH:
+        await message.answer(f"❗️ Длина отзыва должна составлять не более {MAX_FEEDBACK_LENGTH} символов. "
+                             f"Попробуйте снова:")
+        return
     else:
-        await add_user_feedback(session, cust_telegram_id=message.from_user.id, feedback_text=message.text)
+        await add_feedback(session, cust_telegram_id=message.from_user.id, feedback_text=message.text)
         await session.commit()
         await message.reply("❣️ Спасибо! Ваш отзыв отправлен администрации.", reply_markup=main_menu_kb)
     await state.reset_data()

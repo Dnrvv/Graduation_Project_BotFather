@@ -32,28 +32,6 @@ async def categories_keyboard(session: AsyncSession):
     return keyboard
 
 
-# async def subcategories_keyboard(category, session: AsyncSession):
-#     current_level = 1
-#     markup = InlineKeyboardMarkup(row_width=2)
-#     subcategories = await product_functions.get_subcategories(session)
-#     for subcategory in subcategories:
-#         button_text = f"{subcategory.subcategory_name}"
-#         callback_data = make_callback_data(level=current_level + 1,
-#                                            category=category,
-#                                            subcategory=subcategory.subcategory_code)
-#         markup.insert(
-#             InlineKeyboardButton(text=button_text, callback_data=callback_data)
-#         )
-#     markup.row(
-#         # level = ... Мы передали тот уровень НА КОТОРЫЙ хотим переместиться
-#         InlineKeyboardButton(text="⬅️ Назад",
-#                              callback_data=make_callback_data(level=current_level - 1)),
-#         InlineKeyboardButton(text="⏺ Главное меню",
-#                              callback_data=make_callback_data(level=current_level - 2))
-#     )
-#     return markup
-
-
 async def items_keyboard(category, session: AsyncSession):
     current_level = 1
     keyboard = InlineKeyboardMarkup(row_width=2)
@@ -71,12 +49,9 @@ async def items_keyboard(category, session: AsyncSession):
         )
 
     keyboard.row(
-        # level = ... Мы передали тот уровень НА КОТОРЫЙ хотим переместиться
         InlineKeyboardButton(text="⬅️ Назад",
                              callback_data=make_callback_data(level=current_level - 1,
                                                               category=category))
-        # InlineKeyboardButton(text="⏺ К оглавлению",
-        #                      callback_data=make_callback_data(level=current_level - 3))
     )
     return keyboard
 
