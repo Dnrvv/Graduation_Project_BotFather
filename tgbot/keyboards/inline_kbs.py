@@ -24,7 +24,7 @@ choose_payment_method_kb = InlineKeyboardMarkup(
             InlineKeyboardButton(text="Visa USD", callback_data=choose_payment_method_cd.new(method="visa_usd"))
         ],
         [
-            InlineKeyboardButton(text="❌Отмена", callback_data=choose_payment_method_cd.new(method="cancel"))
+            InlineKeyboardButton(text="❌ Отмена", callback_data=choose_payment_method_cd.new(method="cancel"))
         ]
     ]
 )

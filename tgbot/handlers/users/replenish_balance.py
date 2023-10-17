@@ -24,6 +24,7 @@ async def get_payment_method(call: types.CallbackQuery, callback_data: dict, sta
         await call.message.edit_text("❌ Операция отменена.")
         await state.reset_data()
         await state.reset_state()
+        return
 
     elif method == "uzcard":
         currency = "UZS"
@@ -119,4 +120,3 @@ def register_replenish_balance(dp: Dispatcher):
     dp.register_message_handler(get_replenish_amount, content_types=types.ContentType.TEXT,
                                 state=ReplenishBalance.GetReplenishAmount)
     dp.register_pre_checkout_query_handler(replenish_pre_checkout, state=ReplenishBalance.Checkout)
-
